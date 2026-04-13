@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sertão Inovador — Avaliação e ranqueamento (Edital 45/2026)
 
-## Getting Started
+Sistema web para importação de inscrições (CSV), triagem, atribuição de avaliadores, avaliação com notas ponderadas, detecção de necessidade de 3º avaliador (CV ≥ 30%), ranking com desempate, cota mínima de 50% para o Sertão, recursos, auditoria e exportação CSV/PDF.
 
-First, run the development server:
+## Stack
+
+- **Frontend:** Next.js 14 (App Router), TypeScript, TailwindCSS, componentes no padrão shadcn/ui, Sonner (toasts), React Hook Form + Zod.
+- **Backend:** Supabase (PostgreSQL, Auth, RLS). Cliente oficial `@supabase/supabase-js` e `@supabase/ssr` (sem Prisma).
+- **PDF:** pdfkit (rotas em `/api/relatorios/pdf`).
+
+## Configuração
+
+1. Crie um projeto em [Supabase](https://supabase.com) e habilite **Auth** (e-mail + magic link e/ou senha).
+2. No **SQL Editor**, execute **na ordem** os arquivos em `sql/migrations/`:
+   - `001_initial_schema.sql`
+   - `002_rls_delete_atribuicao.sql`
+   - `003_recursos_nota.sql`
+3. (Opcional, ambiente de teste) Rode `sql/seed/seed_demo.sql` para popular dados de demonstração.
+4. Copie `.env.example` para `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Primeiro coordenador
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Crie um usuário em **Authentication → Users** (ou cadastre-se pela tela de login).
+2. Na tabela `public.profiles`, defina `role = 'COORDENADOR'` para o `id` desse usuário:
 
-## Learn More
+```sql
+UPDATE public.profiles SET role = 'COORDENADOR' WHERE id = 'UUID_DO_USUARIO';
+```
 
-To learn more about Next.js, take a look at the following resources:
+3. Cadastre avaliadores em **/admin/avaliadores** com o **mesmo e-mail** que usarão no login (magic link ou senha).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Regras implementadas (resumo)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Nota ponderada:** \((equipe×6)+(mercado×6)+(produto×4)+(tecnologia×4)\), entre 20 e 100 (trigger no banco).
+- **CV (2 avaliações):** \(\text{CV} = (|A-B| / \text{média}) × 100\), com média \((A+B)/2\). Se CV ≥ 30%, status `AGUARDANDO_3O_AVALIADOR`.
+- **Nota final:** média das 2 ou 3 notas ponderadas concluídas.
+- **Desempate:** nota final → média equipe → mercado → produto → tecnologia → `timestamp_submissao` mais antigo.
+- **Cota Sertão:** `vagas_sertao = ceil(total_vagas × 0.5)`; preenchimento conforme `lib/services/ranking.ts` (`aplicarCota`).
+- **Importação CSV:** mapeamento flexível de colunas, deduplicação (CPF mais recente; mesmo nome com CPFs diferentes mantém submissão mais antiga), UF = PE, `is_sertao` via `municipios_sertao`.
+- **Impedimento:** remove atribuição e avaliação do avaliador; projeto volta para `EM_AVALIACAO` (ações em `app/actions/avaliador.ts`).
+- **Desclassificação:** cancela atribuições `PENDENTE` / `EM_ANDAMENTO`; avaliações já concluídas permanecem no banco mas o projeto não entra no ranking (`status = DESCLASSIFICADO`).
+- **Página pública:** somente após `resultado_final_liberado = true` em `app_config`; exibe selecionados e suplentes, ordem alfabética.
 
-## Deploy on Vercel
+## Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Vercel:** conecte o repositório, defina as variáveis de ambiente e faça o deploy. Use Node 18+.
+- **Supabase:** mantenha as políticas RLS ativas; em **Auth → URL Configuration**, inclua a URL de produção e o callback `https://SEU_DOMINIO/auth/callback`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Estrutura principal
+
+- `app/admin/*` — painel do coordenador  
+- `app/avaliador/*` — painel do avaliador  
+- `app/resultado` — resultado público  
+- `app/actions/*` — server actions  
+- `lib/services/*` — CSV, ranking, cota, CV, PDF, auditoria  
+- `sql/migrations/*` — schema, RLS e ajustes  
+
+## Observações
+
+- O **service role** (`SUPABASE_SERVICE_ROLE_KEY`) está previsto em `lib/supabase/admin.ts` para extensões futuras; o fluxo atual usa a sessão do coordenador com RLS.
+- Se o Postgres rejeitar `EXECUTE PROCEDURE` nos triggers, troque para `EXECUTE FUNCTION` (PostgreSQL 14+) nos arquivos de migração.
+- Ajuste a lista em `municipios_sertao` conforme o edital para o cálculo automático de `is_sertao` na importação.
