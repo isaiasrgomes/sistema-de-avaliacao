@@ -2,6 +2,8 @@
 
 import { createServerSupabase } from "@/lib/supabase/server";
 import { importarCSVProjetos } from "@/lib/services/csv-import";
+import { cadastrarOuAtualizarProjetoManual } from "@/lib/services/projeto-manual";
+import { projetoManualSchema } from "@/lib/validations/projeto-manual";
 import { logAuditoria } from "@/lib/services/audit";
 import { calcularResultados, aplicarCota } from "@/lib/services/ranking";
 import { gerarAtribuicoesAutomaticas } from "@/lib/services/atribuicoes-service";
@@ -28,6 +30,27 @@ export async function actionImportarCSV(formData: FormData) {
     acao: "IMPORTAR_CSV",
     entidade: "projetos",
     detalhes: res as unknown as Record<string, unknown>,
+  });
+  revalidatePath("/admin/projetos");
+  revalidatePath("/admin");
+  return res;
+}
+
+export async function actionCadastrarProjetoManual(data: unknown) {
+  const parsed = projetoManualSchema.safeParse(data);
+  if (!parsed.success) {
+    const msg = parsed.error.flatten().fieldErrors;
+    throw new Error(Object.values(msg).flat().filter(Boolean).join(" ") || "Dados inválidos");
+  }
+  const { supabase, user } = await requireCoord();
+  const res = await cadastrarOuAtualizarProjetoManual(supabase, parsed.data);
+  if (!res.ok) throw new Error(res.erro);
+  await logAuditoria(supabase, {
+    usuario_id: user.id,
+    acao: res.tipo === "inserido" ? "CADASTRO_MANUAL_PROJETO" : "ATUALIZACAO_MANUAL_PROJETO",
+    entidade: "projetos",
+    entidade_id: res.projetoId,
+    detalhes: { nome_projeto: parsed.data.nome_projeto },
   });
   revalidatePath("/admin/projetos");
   revalidatePath("/admin");

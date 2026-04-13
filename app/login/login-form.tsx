@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -15,6 +15,16 @@ export function LoginForm() {
   const next = search.get("next") || "/avaliador";
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const err = search.get("error");
+    if (!err) return;
+    try {
+      toast.error(decodeURIComponent(err));
+    } catch {
+      toast.error(err);
+    }
+  }, [search]);
 
   async function magicLink() {
     setLoading(true);

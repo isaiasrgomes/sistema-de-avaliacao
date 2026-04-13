@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 const items = [
   { href: "/admin", label: "Monitoramento", icon: LayoutDashboard },
   { href: "/admin/projetos", label: "Projetos", icon: LineChart },
-  { href: "/admin/importar", label: "Importar CSV", icon: Upload },
+  { href: "/admin/importar", label: "Inscrições", icon: Upload },
   { href: "/admin/avaliadores", label: "Avaliadores", icon: Users },
   { href: "/admin/atribuicoes", label: "Atribuições", icon: Link2 },
   { href: "/admin/ranking", label: "Ranking / Resultado", icon: Trophy },
