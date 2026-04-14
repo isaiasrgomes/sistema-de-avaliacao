@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatarTelefoneBR } from "@/lib/utils/documentos";
+import type { UfBrasil } from "@/lib/constants/brasil";
 
 function somenteDigitos(v: string) {
   return v.replace(/\D/g, "");
@@ -39,7 +40,7 @@ function defaultTimestampLocal() {
   return d.toISOString().slice(0, 16);
 }
 
-export function ProjetoManualForm({ municipios }: { municipios: string[] }) {
+export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; ufs: string[] }) {
   const defaults = useMemo<ProjetoManualInput>(
     () => ({
       nome_projeto: "",
@@ -68,8 +69,8 @@ export function ProjetoManualForm({ municipios }: { municipios: string[] }) {
       <CardHeader>
         <CardTitle>Cadastro manual</CardTitle>
         <CardDescription>
-          Mesmas regras do CSV: UF obrigatória PE; <strong>cota Sertão</strong> é definida automaticamente
-          conforme o município está na tabela de municípios do Sertão. Se já existir projeto com o mesmo CPF e
+          <strong>Cota Sertão</strong> é definida automaticamente conforme o município está na tabela de municípios do
+          Sertão. Se já existir projeto com o mesmo CPF e
           mesmo nome do projeto, o registro será <strong>atualizado</strong>.
         </CardDescription>
       </CardHeader>
@@ -159,10 +160,23 @@ export function ProjetoManualForm({ municipios }: { municipios: string[] }) {
               )}
             </div>
             <div className="space-y-2">
-              <Label>UF *</Label>
-              <input type="hidden" {...form.register("uf")} />
-              <div className="flex h-10 items-center rounded-md border border-input bg-muted px-3 text-sm">PE</div>
-              <p className="text-xs text-muted-foreground">Conforme edital: apenas Pernambuco.</p>
+              <Label htmlFor="uf">UF *</Label>
+              <Input
+                id="uf"
+                list="ufs-brasil"
+                placeholder="Digite para buscar..."
+                maxLength={2}
+                value={form.watch("uf") ?? ""}
+                onChange={(e) =>
+                  form.setValue("uf", e.target.value.toUpperCase() as UfBrasil, { shouldValidate: true })
+                }
+              />
+              <datalist id="ufs-brasil">
+                {ufs.map((uf) => (
+                  <option key={uf} value={uf} />
+                ))}
+              </datalist>
+              {form.formState.errors.uf && <p className="text-xs text-destructive">{form.formState.errors.uf.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="fase">Fase *</Label>

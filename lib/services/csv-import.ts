@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import Papa from "papaparse";
 import type { ProjetoFase, ProjetoStatus } from "@/lib/types/database";
 import { validarCNPJ, validarCPF, validarTelefoneBR } from "@/lib/utils/documentos";
+import { UFS_BRASIL } from "@/lib/constants/brasil";
 
 export interface ImportResult {
   inseridos: number;
@@ -56,6 +57,7 @@ export async function importarCSVProjetos(
   supabase: SupabaseClient,
   csvText: string
 ): Promise<ImportResult> {
+  const ufsSet = new Set(UFS_BRASIL);
   const erros: string[] = [];
   const parsed = Papa.parse<Record<string, string>>(csvText, {
     header: true,
@@ -132,7 +134,7 @@ export async function importarCSVProjetos(
 
   for (const r of rows) {
     const uf = (r.uf || "PE").toUpperCase();
-    if (uf !== "PE") {
+    if (!ufsSet.has(uf as (typeof UFS_BRASIL)[number])) {
       erros.push(`UF inválida (${uf}) — projeto ${r.nome_projeto || "?"}`);
       ignorados++;
       continue;
@@ -175,7 +177,7 @@ export async function importarCSVProjetos(
       cpf_responsavel: r.cpf_responsavel,
       cnpj: r.cnpj || null,
       municipio: r.municipio,
-      uf: "PE",
+      uf,
       fase: parseFase(r.fase || "IDEACAO"),
       categoria_setor: r.categoria_setor,
       is_sertao: isSertao,

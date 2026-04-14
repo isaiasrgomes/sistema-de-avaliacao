@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Building2, CalendarRange, Download, Gauge, Timer } from "lucide-react";
 
 type DashboardProjetoMetric = {
   id: string;
@@ -89,6 +90,16 @@ export function DashboardMetricasClient({ projetos }: { projetos: DashboardProje
   }, [filtrados]);
 
   const maxSerie = useMemo(() => Math.max(1, ...serieTemporal.map((s) => Math.max(s.submetidos, s.avaliados))), [serieTemporal]);
+  const totalIdeacao = useMemo(() => filtrados.filter((p) => p.fase === "IDEACAO").length, [filtrados]);
+  const totalValidacao = useMemo(() => filtrados.filter((p) => p.fase === "VALIDACAO").length, [filtrados]);
+  const totalAvaliados = useMemo(
+    () =>
+      filtrados.filter(
+        (p) => p.status === "AVALIADO" || p.status === "SELECIONADO" || p.status === "SUPLENTE" || p.status === "NAO_SELECIONADO"
+      ).length,
+    [filtrados]
+  );
+  const totalNaoAvaliados = Math.max(0, filtrados.length - totalAvaliados);
 
   function exportarCsvRecorte() {
     const headers = [
@@ -164,65 +175,140 @@ export function DashboardMetricasClient({ projetos }: { projetos: DashboardProje
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Top municípios</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-bold">{topMunicipios[0]?.municipio ?? "Sem dados"}</CardContent>
+          <CardContent className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold">{topMunicipios[0]?.municipio ?? "Sem dados"}</p>
+              <p className="text-xs text-muted-foreground">Maior volume no recorte atual</p>
+            </div>
+            <Building2 className="h-5 w-5 text-primary" />
+          </CardContent>
         </Card>
         <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de avaliação</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-bold">{taxa}%</CardContent>
+          <CardContent className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold">{taxa}%</p>
+              <p className="text-xs text-muted-foreground">Projetos já avaliados no recorte</p>
+            </div>
+            <Gauge className="h-5 w-5 text-emerald-500" />
+          </CardContent>
         </Card>
         <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Tempo médio por projeto</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-bold">{tempoMedioHoras}h</CardContent>
+          <CardContent className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold">{tempoMedioHoras}h</p>
+              <p className="text-xs text-muted-foreground">Da submissão à 1ª avaliação</p>
+            </div>
+            <Timer className="h-5 w-5 text-amber-500" />
+          </CardContent>
         </Card>
       </div>
 
-      <Card className="border-border/70 bg-card/85 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">Métricas por município e fase</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-1 text-sm text-muted-foreground">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="w-full border-border/70 bg-card/85 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base">Métricas por município e fase</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
             {topMunicipios.map((m) => (
-              <li key={m.municipio}>
-                {m.municipio} — Total: {m.total} | Ideação: {m.ideacao} | Validação: {m.validacao} | Taxa avaliada:{" "}
-                {m.taxaAvaliacao}%
-              </li>
+              <div key={m.municipio} className="rounded-md border border-border/60 px-2 py-1.5">
+                <div className="mb-1 flex items-center justify-between text-xs">
+                  <span className="truncate pr-2 font-medium text-foreground">{m.municipio}</span>
+                  <span className="text-muted-foreground">
+                    {m.total} | I {m.ideacao} | V {m.validacao} | Av {m.taxaAvaliacao}%
+                  </span>
+                </div>
+                <div className="h-1 rounded bg-muted">
+                  <div className="h-1 rounded bg-primary/60" style={{ width: `${m.taxaAvaliacao}%` }} />
+                </div>
+              </div>
             ))}
-            {topMunicipios.length === 0 && <li>Nenhum projeto no recorte atual.</li>}
-          </ul>
-        </CardContent>
-      </Card>
+            {topMunicipios.length === 0 && <p className="text-sm text-muted-foreground">Nenhum projeto no recorte atual.</p>}
+          </CardContent>
+        </Card>
 
-      <Card className="border-border/70 bg-card/85 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">Tendência temporal (mês)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {serieTemporal.map((s) => (
-            <div key={s.mes} className="space-y-1">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{s.mes}</span>
-                <span>
-                  Submetidos: {s.submetidos} | Avaliados: {s.avaliados}
-                </span>
-              </div>
-              <div className="space-y-1">
-                <div className="h-2 rounded bg-muted">
-                  <div className="h-2 rounded bg-blue-500" style={{ width: `${(s.submetidos / maxSerie) * 100}%` }} />
+        <div className="space-y-4">
+          <Card className="border-border/70 bg-card/85 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarRange className="h-4 w-4 text-blue-500" />
+                Tendência temporal (mês)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {serieTemporal.map((s) => (
+                <div key={s.mes} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{s.mes}</span>
+                    <span>
+                      Submetidos: {s.submetidos} | Avaliados: {s.avaliados}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="h-2 rounded bg-muted">
+                      <div className="h-2 rounded bg-blue-500" style={{ width: `${(s.submetidos / maxSerie) * 100}%` }} />
+                    </div>
+                    <div className="h-2 rounded bg-muted">
+                      <div className="h-2 rounded bg-emerald-500" style={{ width: `${(s.avaliados / maxSerie) * 100}%` }} />
+                    </div>
+                  </div>
                 </div>
-                <div className="h-2 rounded bg-muted">
-                  <div className="h-2 rounded bg-emerald-500" style={{ width: `${(s.avaliados / maxSerie) * 100}%` }} />
+              ))}
+              {serieTemporal.length === 0 && <p className="text-sm text-muted-foreground">Sem dados no recorte.</p>}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/70 bg-card/85 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Distribuição do recorte</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-xs text-muted-foreground">
+              <div className="rounded-md border border-border/60 px-2 py-1.5">
+                <div className="mb-1 flex items-center justify-between">
+                  <span>Fase</span>
+                  <span>
+                    Ideação {totalIdeacao} | Validação {totalValidacao}
+                  </span>
+                </div>
+                <div className="h-1 rounded bg-muted">
+                  <div
+                    className="h-1 rounded bg-slate-500"
+                    style={{ width: `${(totalIdeacao / Math.max(1, filtrados.length)) * 100}%` }}
+                  />
                 </div>
               </div>
-            </div>
-          ))}
-          {serieTemporal.length === 0 && <p className="text-sm text-muted-foreground">Sem dados no recorte.</p>}
-        </CardContent>
-      </Card>
+              <div className="rounded-md border border-border/60 px-2 py-1.5">
+                <div className="mb-1 flex items-center justify-between">
+                  <span>Status</span>
+                  <span>
+                    Avaliados {totalAvaliados} | Pendentes {totalNaoAvaliados}
+                  </span>
+                </div>
+                <div className="h-1 rounded bg-muted">
+                  <div
+                    className="h-1 rounded bg-primary/60"
+                    style={{ width: `${(totalAvaliados / Math.max(1, filtrados.length)) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/70 bg-card/85 shadow-sm">
+            <CardContent className="pt-5">
+              <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Download className="h-3.5 w-3.5" />
+                Use “Exportar recorte (CSV)” para levar essa visão para BI/planilha.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -14,10 +14,6 @@ export async function cadastrarOuAtualizarProjetoManual(
   supabase: SupabaseClient,
   input: ProjetoManualInput
 ): Promise<CadastroProjetoResult> {
-  if (input.uf !== "PE") {
-    return { ok: false, erro: "Apenas UF PE é permitida (edital)." };
-  }
-
   let ts: string;
   try {
     const d = new Date(input.timestamp_submissao);
@@ -41,7 +37,7 @@ export async function cadastrarOuAtualizarProjetoManual(
     cpf_responsavel: norm(input.cpf_responsavel),
     cnpj: input.cnpj ? norm(input.cnpj) : null,
     municipio: norm(input.municipio),
-    uf: "PE" as const,
+    uf: norm(input.uf).toUpperCase(),
     fase: input.fase as ProjetoFase,
     categoria_setor: norm(input.categoria_setor),
     is_sertao: isSertao,

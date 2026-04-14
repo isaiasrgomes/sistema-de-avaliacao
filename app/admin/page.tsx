@@ -1,6 +1,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardMetricasClient } from "./dashboard-metricas-client";
+import { AlertTriangle, BarChart3, CheckCircle2, Clock3, FileText, UserRoundCheck, Users } from "lucide-react";
 
 export default async function AdminDashboardPage() {
   const supabase = await createServerSupabase();
@@ -54,37 +55,57 @@ export default async function AdminDashboardPage() {
     timestamp_submissao: p.timestamp_submissao,
     first_eval_at: firstAvaliacaoByProjeto.get(p.id)?.toISOString() ?? null,
   }));
+  const maxPend = Math.max(1, ...Array.from(pendPorAval.values()));
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Monitoramento</h1>
-        <p className="text-sm text-muted-foreground">Indicadores gerais da avaliação</p>
+      <div className="rounded-xl border border-border/70 bg-gradient-to-r from-card/90 via-card/80 to-primary/5 p-5 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Monitoramento</h1>
+            <p className="text-sm text-muted-foreground">Visão executiva da operação de avaliação</p>
+          </div>
+          <div className="rounded-lg bg-primary/10 p-2 text-primary">
+            <BarChart3 className="h-5 w-5" />
+          </div>
+        </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Inscritos</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-bold">{total ?? 0}</CardContent>
+          <CardContent className="flex items-center justify-between">
+            <p className="text-2xl font-bold">{total ?? 0}</p>
+            <FileText className="h-5 w-5 text-muted-foreground" />
+          </CardContent>
         </Card>
         <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Desclassificados</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-bold">{desc ?? 0}</CardContent>
+          <CardContent className="flex items-center justify-between">
+            <p className="text-2xl font-bold text-rose-600">{desc ?? 0}</p>
+            <AlertTriangle className="h-5 w-5 text-rose-500" />
+          </CardContent>
         </Card>
         <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Avaliados</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-bold">{aval ?? 0}</CardContent>
+          <CardContent className="flex items-center justify-between">
+            <p className="text-2xl font-bold text-emerald-600">{aval ?? 0}</p>
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          </CardContent>
         </Card>
         <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Em avaliação</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-bold">{em ?? 0}</CardContent>
+          <CardContent className="flex items-center justify-between">
+            <p className="text-2xl font-bold text-amber-600">{em ?? 0}</p>
+            <Clock3 className="h-5 w-5 text-amber-500" />
+          </CardContent>
         </Card>
       </div>
       <DashboardMetricasClient projetos={projetosComMetrica} />
@@ -104,26 +125,44 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Aguardando 3º avaliador</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <UserRoundCheck className="h-4 w-4 text-amber-500" />
+              Aguardando 3º avaliador
+            </CardTitle>
           </CardHeader>
-          <CardContent className="text-3xl font-bold">{ag3 ?? 0}</CardContent>
+          <CardContent className="space-y-2">
+            <p className="text-3xl font-bold">{ag3 ?? 0}</p>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full bg-amber-500 transition-all" style={{ width: `${Math.min(100, ((ag3 ?? 0) / Math.max(1, total ?? 1)) * 100)}%` }} />
+            </div>
+            <p className="text-xs text-muted-foreground">Proporção sobre total de projetos cadastrados.</p>
+          </CardContent>
         </Card>
         <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Avaliadores com pendências</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4 text-rose-500" />
+              Avaliadores com pendências
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ul className="text-sm text-muted-foreground">
-              {Array.from(pendPorAval.entries())
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 8)
-                .map(([id, n]) => (
-                <li key={id}>
-                  {nomePorAvaliador.get(id) ?? "Avaliador não encontrado"} — {n} pendência(s)
-                </li>
-              ))}
-              {pendPorAval.size === 0 && <li>Nenhuma pendência registrada.</li>}
-            </ul>
+          <CardContent className="space-y-2">
+            {Array.from(pendPorAval.entries())
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 8)
+              .map(([id, n]) => {
+                return (
+                  <div key={id} className="rounded-lg border border-border/60 p-2">
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span className="font-medium text-foreground">{nomePorAvaliador.get(id) ?? "Avaliador não encontrado"}</span>
+                      <span className="text-muted-foreground">{n} pendência(s)</span>
+                    </div>
+                    <div className="h-2 rounded bg-muted">
+                      <div className="h-2 rounded bg-rose-500" style={{ width: `${(n / maxPend) * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            {pendPorAval.size === 0 && <p className="text-sm text-muted-foreground">Nenhuma pendência registrada.</p>}
           </CardContent>
         </Card>
       </div>

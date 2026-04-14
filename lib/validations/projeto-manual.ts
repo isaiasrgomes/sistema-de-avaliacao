@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { validarCNPJ, validarCPF, validarTelefoneBR } from "@/lib/utils/documentos";
+import { UFS_BRASIL } from "@/lib/constants/brasil";
 
 export const projetoManualSchema = z.object({
   nome_projeto: z.string().min(1, "Obrigatório").max(255),
@@ -21,7 +22,7 @@ export const projetoManualSchema = z.object({
     .optional()
     .refine((v) => !v || validarCNPJ(v), "CNPJ inválido"),
   municipio: z.string().min(1, "Obrigatório").max(100),
-  uf: z.literal("PE"),
+  uf: z.enum(UFS_BRASIL, { message: "UF inválida" }),
   fase: z.enum(["IDEACAO", "VALIDACAO"]),
   categoria_setor: z.string().min(1, "Obrigatório").max(100),
   url_video_pitch: z
