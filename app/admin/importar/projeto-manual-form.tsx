@@ -17,7 +17,7 @@ function defaultTimestampLocal() {
   return d.toISOString().slice(0, 16);
 }
 
-export function ProjetoManualForm() {
+export function ProjetoManualForm({ municipiosSertao }: { municipiosSertao: string[] }) {
   const defaults = useMemo<ProjetoManualInput>(
     () => ({
       nome_projeto: "",
@@ -103,7 +103,18 @@ export function ProjetoManualForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="municipio">Município *</Label>
-              <Input id="municipio" {...form.register("municipio")} />
+              <select
+                id="municipio"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                {...form.register("municipio")}
+              >
+                <option value="">Selecione um município</option>
+                {municipiosSertao.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
               {form.formState.errors.municipio && (
                 <p className="text-xs text-destructive">{form.formState.errors.municipio.message}</p>
               )}
