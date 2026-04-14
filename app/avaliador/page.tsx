@@ -32,10 +32,11 @@ export default async function AvaliadorHomePage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Meus projetos</h1>
-        <p className="text-muted-foreground">Apenas atribuições vinculadas ao seu e-mail.</p>
+      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Meus projetos</h1>
+        <p className="text-sm text-muted-foreground">Apenas atribuições vinculadas ao seu e-mail.</p>
       </div>
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>
@@ -59,7 +60,9 @@ export default async function AvaliadorHomePage() {
                 <TableCell>{p?.status}</TableCell>
                 <TableCell className="text-right">
                   <Button asChild size="sm">
-                    <Link href={`/avaliador/projeto/${a.projeto_id}?atribuicao=${a.id}`}>Abrir</Link>
+                    <Link prefetch href={`/avaliador/projeto/${a.projeto_id}?atribuicao=${a.id}`}>
+                      Abrir
+                    </Link>
                   </Button>
                 </TableCell>
               </TableRow>
@@ -67,6 +70,7 @@ export default async function AvaliadorHomePage() {
           })}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

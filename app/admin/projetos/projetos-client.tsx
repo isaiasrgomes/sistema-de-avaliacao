@@ -38,12 +38,13 @@ export function ProjetosClient({ initial }: { initial: Projeto[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
         <Input placeholder="Município" value={municipio} onChange={(e) => setMunicipio(e.target.value)} className="max-w-xs" />
         <Input placeholder="Fase (IDEACAO/VALIDACAO)" value={fase} onChange={(e) => setFase(e.target.value as ProjetoFase)} className="max-w-xs" />
         <Input placeholder="Setor" value={setor} onChange={(e) => setSetor(e.target.value)} className="max-w-xs" />
         <Input placeholder="Status" value={status} onChange={(e) => setStatus(e.target.value as ProjetoStatus)} className="max-w-xs" />
       </div>
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>
@@ -146,6 +147,7 @@ export function ProjetosClient({ initial }: { initial: Projeto[] }) {
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

@@ -21,7 +21,7 @@ export function AtribuicoesClient({
 
   return (
     <div className="grid gap-8 lg:grid-cols-3">
-      <div className="space-y-4 rounded-lg border bg-card p-4">
+      <div className="space-y-4 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
         <h2 className="font-semibold">Manual</h2>
         <div className="space-y-2">
           <Label>Projeto</Label>
@@ -74,7 +74,7 @@ export function AtribuicoesClient({
           Salvar manual
         </Button>
       </div>
-      <div className="space-y-4 rounded-lg border bg-card p-4">
+      <div className="space-y-4 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
         <h2 className="font-semibold">3º avaliador (CV ≥ 30%)</h2>
         <p className="text-sm text-muted-foreground">
           Projetos em <code>AGUARDANDO_3O_AVALIADOR</code> precisam de uma terceira atribuição (ordem 3).
@@ -117,7 +117,7 @@ export function AtribuicoesClient({
           Atribuir 3º
         </Button>
       </div>
-      <div className="space-y-4 rounded-lg border bg-card p-4">
+      <div className="space-y-4 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
         <h2 className="font-semibold">Automático</h2>
         <p className="text-sm text-muted-foreground">
           Distribui 2 avaliadores por projeto sem atribuição prévia, equilibrando carga e respeitando impedimentos cadastrados.

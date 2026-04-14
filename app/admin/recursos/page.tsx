@@ -28,12 +28,12 @@ export default function RecursosPage() {
   }, [supabase]);
 
   return (
-    <div className="max-w-xl space-y-4 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Recursos</h1>
-        <p className="text-muted-foreground">Registre recurso, parecer e eventual ajuste de nota (com auditoria).</p>
+    <div className="max-w-2xl space-y-5">
+      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Recursos</h1>
+        <p className="text-sm text-muted-foreground">Registre recurso, parecer e eventual ajuste de nota (com auditoria).</p>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
         <Label>Projeto</Label>
         <select className="flex h-10 w-full rounded-md border px-3 text-sm" value={projetoId} onChange={(e) => setProjetoId(e.target.value)}>
           <option value="">—</option>

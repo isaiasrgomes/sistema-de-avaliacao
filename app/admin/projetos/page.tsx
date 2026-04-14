@@ -6,10 +6,10 @@ export default async function AdminProjetosPage() {
   const { data: projetos } = await supabase.from("projetos").select("*").order("timestamp_submissao", { ascending: false });
 
   return (
-    <div className="space-y-4 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Projetos — triagem</h1>
-        <p className="text-muted-foreground">Filtre, desclassifique ou reclassifique inscrições.</p>
+    <div className="space-y-5">
+      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Projetos - triagem</h1>
+        <p className="text-sm text-muted-foreground">Filtre, desclassifique ou reclassifique inscricoes.</p>
       </div>
       <ProjetosClient initial={projetos ?? []} />
     </div>

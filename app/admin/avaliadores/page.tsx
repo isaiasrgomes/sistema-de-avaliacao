@@ -17,10 +17,10 @@ export default async function AvaliadoresPage() {
   );
 
   return (
-    <div className="space-y-4 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Avaliadores</h1>
-        <p className="text-muted-foreground">Cadastro deve usar o mesmo e-mail do login (magic link).</p>
+    <div className="space-y-5">
+      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Avaliadores</h1>
+        <p className="text-sm text-muted-foreground">Cadastro deve usar o mesmo e-mail do login (magic link).</p>
       </div>
       <AvaliadoresClient initial={comCarga} />
     </div>

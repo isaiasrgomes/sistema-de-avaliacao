@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { BackNav } from "@/components/back-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,10 @@ export default async function AvaliadorLayout({ children }: { children: React.Re
           </form>
         </div>
       </header>
-      <div className="p-6">{children}</div>
+      <div className="p-6">
+        <BackNav sectionRoot="/avaliador" primaryLabel="Minhas avaliações" />
+        {children}
+      </div>
     </div>
   );
 }

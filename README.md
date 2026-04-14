@@ -1,5 +1,7 @@
 # Sertão Inovador — Avaliação e ranqueamento (Edital 45/2026)
 
+Repositório: [github.com/isaiasrgomes/sistema-de-avaliacao](https://github.com/isaiasrgomes/sistema-de-avaliacao)
+
 Sistema web para importação de inscrições (CSV), triagem, atribuição de avaliadores, avaliação com notas ponderadas, detecção de necessidade de 3º avaliador (CV ≥ 30%), ranking com desempate, cota mínima de 50% para o Sertão, recursos, auditoria e exportação CSV/PDF.
 
 ## Stack
@@ -64,8 +66,23 @@ UPDATE public.profiles SET role = 'COORDENADOR' WHERE id = 'UUID_DO_USUARIO';
 
 ## Deploy
 
-- **Vercel:** conecte o repositório, defina as variáveis de ambiente e faça o deploy. Use Node 18+.
-- **Supabase:** mantenha as políticas RLS ativas; em **Auth → URL Configuration**, inclua a URL de produção e o callback `https://SEU_DOMINIO/auth/callback`.
+### GitHub Pages e este projeto
+
+O [GitHub Pages](https://pages.github.com/) hospeda apenas arquivos estáticos (HTML/CSS/JS). Este sistema usa **rotas de API** (`/api/...`), **middleware** (proteção de `/admin` e `/avaliador`), **renderização no servidor** e **Supabase com cookies de sessão**. Por isso **não é possível** publicar a aplicação completa só no GitHub Pages sem reescrever grande parte do código (por exemplo, eliminando API routes e middleware).
+
+**Recomendação:** faça o deploy com a mesma conta do GitHub usando **Vercel** (plano gratuito): importe o repositório [isaiasrgomes/sistema-de-avaliacao](https://github.com/isaiasrgomes/sistema-de-avaliacao), configure `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`, e use Node 18+.
+
+### Caminho base (subpasta)
+
+Se no futuro você publicar em um domínio com subpasta (por exemplo, outro host estático com proxy), defina `NEXT_PUBLIC_BASE_PATH` (ex.: `/sistema-de-avaliacao`) no ambiente de build. Em produção na raiz do domínio, deixe vazio.
+
+### Supabase em produção
+
+Mantenha as políticas RLS ativas; em **Auth → URL Configuration**, inclua a URL de produção e o callback `https://SEU_DOMINIO/auth/callback`.
+
+### CI
+
+O workflow `.github/workflows/ci.yml` executa `lint` e `build` em cada push/PR para a branch `main` ou `master`.
 
 ## Estrutura principal
 

@@ -11,13 +11,13 @@ export default async function RankingPage() {
     .order("posicao_geral", { ascending: true, nullsFirst: false });
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Ranking e resultado</h1>
-        <p className="text-muted-foreground">Gere ranking numérico, aplique cota do Sertão e libere o resultado final.</p>
+    <div className="space-y-6">
+      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Ranking e resultado</h1>
+        <p className="text-sm text-muted-foreground">Gere ranking numerico, aplique cota do Sertao e libere o resultado final.</p>
       </div>
       <RankingClient totalVagasInicial={cfg?.total_vagas ?? 25} fase={cfg?.fase_publicacao ?? "PRELIMINAR"} liberado={cfg?.resultado_final_liberado ?? false} />
-      <div className="rounded-md border bg-card">
+      <div className="rounded-xl border border-border/70 bg-card/85 shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>

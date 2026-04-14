@@ -33,38 +33,38 @@ export default async function AdminDashboardPage() {
   const pct = eleg > 0 ? Math.round(((aval ?? 0) / eleg) * 100) : 0;
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Monitoramento</h1>
-        <p className="text-muted-foreground">Indicadores gerais da avaliação</p>
+    <div className="space-y-6">
+      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Monitoramento</h1>
+        <p className="text-sm text-muted-foreground">Indicadores gerais da avaliação</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Inscritos</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold">{total ?? 0}</CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Desclassificados</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold">{desc ?? 0}</CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Avaliados</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold">{aval ?? 0}</CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Em avaliação</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold">{em ?? 0}</CardContent>
         </Card>
       </div>
-      <Card>
+      <Card className="border-border/70 bg-card/85 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Progresso estimado</CardTitle>
         </CardHeader>
@@ -78,13 +78,13 @@ export default async function AdminDashboardPage() {
         </CardContent>
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader>
             <CardTitle className="text-base">Aguardando 3º avaliador</CardTitle>
           </CardHeader>
           <CardContent className="text-3xl font-bold">{ag3 ?? 0}</CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader>
             <CardTitle className="text-base">Avaliadores com pendências</CardTitle>
           </CardHeader>

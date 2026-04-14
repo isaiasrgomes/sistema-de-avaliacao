@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type Row = {
@@ -44,11 +47,20 @@ export default function ResultadoPublicoPage() {
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-8">
+      <div className="flex justify-center">
+        <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" asChild>
+          <Link href="/">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar ao início
+          </Link>
+        </Button>
+      </div>
       <div className="text-center">
         <h1 className="text-2xl font-bold text-primary">Sertão Inovador — Resultado</h1>
         <p className="text-muted-foreground">Edital 45/2026 — ordem alfabética</p>
       </div>
       {msg && <p className="text-center text-sm text-muted-foreground">{msg}</p>}
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>
@@ -69,6 +81,7 @@ export default function ResultadoPublicoPage() {
           ))}
         </TableBody>
       </Table>
+      </div>
     </main>
   );
 }

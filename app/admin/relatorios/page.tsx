@@ -5,12 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function RelatoriosPage() {
   return (
-    <div className="max-w-2xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Relatórios</h1>
-        <p className="text-muted-foreground">Exportações em CSV e PDF (autenticado como coordenador).</p>
+    <div className="max-w-3xl space-y-6">
+      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Relatorios</h1>
+        <p className="text-sm text-muted-foreground">Exportacoes em CSV e PDF (autenticado como coordenador).</p>
       </div>
-      <Card>
+      <Card className="border-border/70 bg-card/85 shadow-sm">
         <CardHeader>
           <CardTitle>CSV</CardTitle>
           <CardDescription>Ranking completo</CardDescription>
@@ -23,7 +23,7 @@ export default function RelatoriosPage() {
           </Button>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="border-border/70 bg-card/85 shadow-sm">
         <CardHeader>
           <CardTitle>PDF</CardTitle>
           <CardDescription>Resultado preliminar e final em ordem alfabética</CardDescription>
@@ -41,7 +41,7 @@ export default function RelatoriosPage() {
           </Button>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="border-border/70 bg-card/85 shadow-sm">
         <CardHeader>
           <CardTitle>Parecer por projeto</CardTitle>
           <CardDescription>Informe o ID do projeto na URL de API ou use o painel (copie da tabela).</CardDescription>

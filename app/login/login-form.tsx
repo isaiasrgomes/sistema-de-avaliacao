@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,12 @@ export function LoginForm() {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
+          <Button variant="ghost" size="sm" className="-ml-2 mb-2 w-fit gap-1 text-muted-foreground" asChild>
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4" />
+              Voltar ao início
+            </Link>
+          </Button>
           <CardTitle>Sertão Inovador</CardTitle>
           <CardDescription>Edital 45/2026 — Acesso ao sistema</CardDescription>
         </CardHeader>

@@ -20,7 +20,7 @@ export function RankingClient({
   const [vagas, setVagas] = useState(String(totalVagasInicial));
 
   return (
-    <div className="flex flex-wrap items-end gap-4 rounded-lg border bg-card p-4">
+    <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
       <div className="space-y-2">
         <Label>Total de vagas</Label>
         <Input className="w-32" value={vagas} onChange={(e) => setVagas(e.target.value)} />

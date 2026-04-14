@@ -18,7 +18,7 @@ export function AvaliadoresClient({ initial }: { initial: Row[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
         <Input placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} className="max-w-xs" />
         <Input placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} className="max-w-xs" />
         <Input placeholder="Instituição" value={inst} onChange={(e) => setInst(e.target.value)} className="max-w-xs" />
@@ -36,6 +36,7 @@ export function AvaliadoresClient({ initial }: { initial: Row[] }) {
           Adicionar
         </Button>
       </div>
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>
@@ -79,6 +80,7 @@ export function AvaliadoresClient({ initial }: { initial: Row[] }) {
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

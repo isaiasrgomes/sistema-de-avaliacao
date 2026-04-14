@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, Upload, Users, Link2, LineChart, Trophy, FileText, Scale, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -20,22 +20,25 @@ const items = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const supabase = createClient();
 
   return (
-    <aside className="flex h-screen w-56 flex-col border-r bg-card">
-      <div className="border-b p-4">
-        <p className="text-sm font-semibold text-primary">Coordenação</p>
-        <p className="text-xs text-muted-foreground">45/2026</p>
+    <aside className="sticky top-0 flex h-screen w-64 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl">
+      <div className="border-b border-border/70 p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary/80">Sertao Maker</p>
+        <p className="mt-2 text-base font-semibold text-foreground">Painel de Coordenação</p>
+        <p className="text-xs text-muted-foreground">Edital 45/2026</p>
       </div>
-      <nav className="flex-1 space-y-1 p-2">
+      <nav className="flex-1 space-y-1.5 p-3">
         {items.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}
+            prefetch
             className={cn(
-              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted",
-              pathname === href && "bg-muted font-medium"
+              "flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-foreground/85 transition-all hover:bg-primary/10 hover:text-primary",
+              pathname === href && "bg-primary/15 font-medium text-primary shadow-sm"
             )}
           >
             <Icon className="h-4 w-4 shrink-0" />
@@ -43,13 +46,14 @@ export function AdminSidebar() {
           </Link>
         ))}
       </nav>
-      <div className="border-t p-2">
+      <div className="border-t border-border/70 p-3">
         <Button
           variant="ghost"
-          className="w-full justify-start gap-2"
+          className="w-full justify-start gap-2 rounded-lg text-foreground/80 hover:bg-destructive/10 hover:text-destructive"
           onClick={async () => {
             await supabase.auth.signOut();
-            window.location.href = "/";
+            router.push("/");
+            router.refresh();
           }}
         >
           <LogOut className="h-4 w-4" />

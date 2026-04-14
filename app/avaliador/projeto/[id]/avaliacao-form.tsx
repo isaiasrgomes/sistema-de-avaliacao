@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { avaliacaoSchema, type AvaliacaoForm } from "@/lib/validations/avaliacao";
@@ -18,6 +19,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
+const campoLabel: Record<string, string> = {
+  nota_equipe: "Nota - Equipe",
+  nota_mercado: "Nota - Mercado",
+  nota_produto: "Nota - Produto",
+  nota_tecnologia: "Nota - Tecnologia",
+  nota_total_ponderada: "Nota total ponderada",
+  justificativa_geral: "Justificativa geral",
+  observacoes_gerais: "Observações gerais",
+  created_at: "Enviada em",
+  updated_at: "Atualizada em",
+};
+
+function formatarValor(chave: string, valor: unknown) {
+  if (valor === null || valor === undefined || valor === "") return "Não informado";
+  if (chave.includes("nota")) return Number(valor).toFixed(2);
+  if (chave.includes("at") || chave.includes("data")) {
+    const dt = new Date(String(valor));
+    if (!Number.isNaN(dt.getTime())) return dt.toLocaleString("pt-BR");
+  }
+  if (typeof valor === "object") return "Informação disponível";
+  return String(valor);
+}
 
 export function AvaliacaoForm({
   projetoId,
@@ -49,17 +73,36 @@ export function AvaliacaoForm({
     [vals.nota_equipe, vals.nota_mercado, vals.nota_produto, vals.nota_tecnologia]
   );
 
+  const router = useRouter();
   const [impOpen, setImpOpen] = useState(false);
   const [impTipo, setImpTipo] = useState<"SOCIETARIO" | "PROFISSIONAL" | "PARENTESCO" | "OUTRO">("OUTRO");
 
   if (!atribuicaoId) return <p className="text-destructive">Abra o projeto pela lista (link com atribuição).</p>;
 
   if (readOnly) {
+    const itens = Object.entries(initial ?? {}).filter(([k]) =>
+      ["nota_equipe", "nota_mercado", "nota_produto", "nota_tecnologia", "justificativa_geral", "observacoes_gerais", "created_at", "updated_at"].includes(k)
+    );
+
     return (
-      <div className="space-y-2 rounded-lg border bg-card p-4 text-sm">
-        <p className="font-medium">Avaliação enviada (somente leitura)</p>
-        <p>Nota ponderada: {Number(initial?.nota_total_ponderada ?? total).toFixed(2)}</p>
-        <pre className="whitespace-pre-wrap text-muted-foreground">{JSON.stringify(initial, null, 2)}</pre>
+      <div className="space-y-4 rounded-xl border border-border/80 bg-card p-5 text-sm shadow-sm">
+        <div className="rounded-lg bg-primary/10 p-3">
+          <p className="font-semibold text-primary">Avaliação enviada (somente leitura)</p>
+          <p className="text-foreground">
+            Nota ponderada final: <strong>{Number(initial?.nota_total_ponderada ?? total).toFixed(2)}</strong>
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {itens.map(([campo, valor]) => (
+            <div key={campo} className="rounded-lg border border-border/70 bg-muted/35 p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {campoLabel[campo] ?? campo.replaceAll("_", " ")}
+              </p>
+              <p className="mt-1 text-sm text-foreground">{formatarValor(campo, valor)}</p>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -76,7 +119,8 @@ export function AvaliacaoForm({
             observacoes_gerais: data.observacoes_gerais ?? "",
           });
           toast.success("Avaliação enviada");
-          window.location.href = "/avaliador";
+          router.push("/avaliador");
+          router.refresh();
         } catch (e: unknown) {
           toast.error(e instanceof Error ? e.message : "Erro");
         }
@@ -133,7 +177,8 @@ export function AvaliacaoForm({
               onClick={async () => {
                 await actionDeclararImpedimento(projetoId, atribuicaoId, impTipo);
                 toast.success("Impedimento registrado");
-                window.location.href = "/avaliador";
+                router.push("/avaliador");
+                router.refresh();
               }}
             >
               Confirmar
