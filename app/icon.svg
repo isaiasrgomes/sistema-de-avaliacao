@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <title>Sistema de Avaliação Sertão Maker</title>
+  <defs>
+    <linearGradient id="sm" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#sm)"/>
+  <path
+    d="M8 22h4v4H8v-4zm6-6h4v10h-4V16zm6-8h4v18h-4V8z"
+    fill="#ffffff"
+    opacity="0.92"
+  />
+  <circle cx="24" cy="7" r="2.5" fill="#fde68a" opacity="0.95"/>
+</svg>

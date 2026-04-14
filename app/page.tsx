@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SertaoMakerBrand } from "@/components/brand-logo";
 import { ArrowRight, BarChart3, ShieldCheck, Users2 } from "lucide-react";
 
 export default function HomePage() {
@@ -26,9 +27,11 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center gap-8 px-6 py-10">
-      <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Sertao Maker</h1>
-        <p className="text-muted-foreground">Plataforma de avaliação e ranqueamento - Edital 45/2026</p>
+      <div className="flex flex-col items-center gap-4 text-center">
+        <SertaoMakerBrand variant="full" align="center" className="flex-col gap-4 sm:flex-row sm:gap-6" />
+        <p className="max-w-lg text-sm text-muted-foreground">
+          Avaliação e ranqueamento de projetos com transparência e rastreabilidade.
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

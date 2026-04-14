@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SertaoMakerBrand } from "@/components/brand-logo";
 import { toast } from "sonner";
 
 export function LoginForm() {
@@ -59,15 +60,16 @@ export function LoginForm() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <Button variant="ghost" size="sm" className="-ml-2 mb-2 w-fit gap-1 text-muted-foreground" asChild>
+        <CardHeader className="space-y-4">
+          <Button variant="ghost" size="sm" className="-ml-2 w-fit gap-1 text-muted-foreground" asChild>
             <Link href="/">
               <ArrowLeft className="h-4 w-4" />
               Voltar ao início
             </Link>
           </Button>
-          <CardTitle>Sertão Inovador</CardTitle>
-          <CardDescription>Edital 45/2026 — Acesso ao sistema</CardDescription>
+          <SertaoMakerBrand variant="full" className="flex-col items-start gap-3 sm:flex-row sm:items-center" />
+          <CardTitle className="sr-only">Entrar</CardTitle>
+          <CardDescription>Acesso ao sistema de avaliação</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">

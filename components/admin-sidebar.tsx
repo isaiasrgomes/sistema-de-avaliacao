@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { LayoutDashboard, Upload, Users, Link2, LineChart, Trophy, FileText, Scale, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { SertaoMakerBrand } from "@/components/brand-logo";
 
 const items = [
   { href: "/admin", label: "Monitoramento", icon: LayoutDashboard },
@@ -25,10 +26,11 @@ export function AdminSidebar() {
 
   return (
     <aside className="sticky top-0 flex h-screen w-64 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl">
-      <div className="border-b border-border/70 p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary/80">Sertao Maker</p>
-        <p className="mt-2 text-base font-semibold text-foreground">Painel de Coordenação</p>
-        <p className="text-xs text-muted-foreground">Edital 45/2026</p>
+      <div className="border-b border-border/70 p-4">
+        <Link href="/admin" prefetch className="block rounded-lg outline-none ring-offset-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring">
+          <SertaoMakerBrand variant="compact" className="gap-2.5" />
+        </Link>
+        <p className="mt-3 text-xs font-medium text-muted-foreground">Painel de Coordenação</p>
       </div>
       <nav className="flex-1 space-y-1.5 p-3">
         {items.map(({ href, label, icon: Icon }) => (
