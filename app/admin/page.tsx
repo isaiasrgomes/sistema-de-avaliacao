@@ -23,11 +23,13 @@ export default async function AdminDashboardPage() {
     .from("atribuicoes")
     .select("avaliador_id")
     .in("status", ["PENDENTE", "EM_ANDAMENTO"]);
+  const { data: avaliadores } = await supabase.from("avaliadores").select("id, nome");
 
   const pendPorAval = new Map<string, number>();
   for (const p of pends ?? []) {
     pendPorAval.set(p.avaliador_id, (pendPorAval.get(p.avaliador_id) ?? 0) + 1);
   }
+  const nomePorAvaliador = new Map((avaliadores ?? []).map((a) => [a.id, a.nome]));
 
   const eleg = Math.max(0, (total ?? 0) - (desc ?? 0));
   const pct = eleg > 0 ? Math.round(((aval ?? 0) / eleg) * 100) : 0;
@@ -91,10 +93,11 @@ export default async function AdminDashboardPage() {
           <CardContent>
             <ul className="text-sm text-muted-foreground">
               {Array.from(pendPorAval.entries())
+                .sort((a, b) => b[1] - a[1])
                 .slice(0, 8)
                 .map(([id, n]) => (
                 <li key={id}>
-                  {id.slice(0, 8)}… — {n} pendência(s)
+                  {nomePorAvaliador.get(id) ?? "Avaliador não encontrado"} — {n} pendência(s)
                 </li>
               ))}
               {pendPorAval.size === 0 && <li>Nenhuma pendência registrada.</li>}
