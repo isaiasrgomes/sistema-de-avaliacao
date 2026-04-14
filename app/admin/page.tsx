@@ -1,5 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DashboardMetricasClient } from "./dashboard-metricas-client";
 
 export default async function AdminDashboardPage() {
   const supabase = await createServerSupabase();
@@ -36,23 +37,6 @@ export default async function AdminDashboardPage() {
   const { data: projetos } = await supabase.from("projetos").select("id, municipio, fase, status, timestamp_submissao");
   const { data: avaliacoes } = await supabase.from("avaliacoes").select("data_avaliacao, atribuicoes(projeto_id)");
 
-  const metricsPorMunicipio = new Map<string, { total: number; ideacao: number; validacao: number; avaliados: number }>();
-  for (const p of projetos ?? []) {
-    const item = metricsPorMunicipio.get(p.municipio) ?? { total: 0, ideacao: 0, validacao: 0, avaliados: 0 };
-    item.total += 1;
-    if (p.fase === "IDEACAO") item.ideacao += 1;
-    if (p.fase === "VALIDACAO") item.validacao += 1;
-    if (p.status === "AVALIADO" || p.status === "SELECIONADO" || p.status === "SUPLENTE" || p.status === "NAO_SELECIONADO") {
-      item.avaliados += 1;
-    }
-    metricsPorMunicipio.set(p.municipio, item);
-  }
-
-  const topMunicipios = Array.from(metricsPorMunicipio.entries())
-    .map(([municipio, m]) => ({ municipio, ...m, taxaAvaliacao: m.total ? Math.round((m.avaliados / m.total) * 100) : 0 }))
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 8);
-
   const firstAvaliacaoByProjeto = new Map<string, Date>();
   for (const a of avaliacoes ?? []) {
     const projetoId = (a.atribuicoes as { projeto_id?: string } | null)?.projeto_id;
@@ -62,19 +46,14 @@ export default async function AdminDashboardPage() {
     if (!current || d < current) firstAvaliacaoByProjeto.set(projetoId, d);
   }
 
-  let somaHoras = 0;
-  let qtdTempo = 0;
-  for (const p of projetos ?? []) {
-    const fim = firstAvaliacaoByProjeto.get(p.id);
-    if (!fim) continue;
-    const ini = new Date(p.timestamp_submissao);
-    const horas = (fim.getTime() - ini.getTime()) / (1000 * 60 * 60);
-    if (horas >= 0) {
-      somaHoras += horas;
-      qtdTempo += 1;
-    }
-  }
-  const tempoMedioHoras = qtdTempo ? (somaHoras / qtdTempo).toFixed(1) : "0.0";
+  const projetosComMetrica = (projetos ?? []).map((p) => ({
+    id: p.id,
+    municipio: p.municipio,
+    fase: p.fase,
+    status: p.status,
+    timestamp_submissao: p.timestamp_submissao,
+    first_eval_at: firstAvaliacaoByProjeto.get(p.id)?.toISOString() ?? null,
+  }));
 
   return (
     <div className="space-y-6">
@@ -108,26 +87,7 @@ export default async function AdminDashboardPage() {
           <CardContent className="text-2xl font-bold">{em ?? 0}</CardContent>
         </Card>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-border/70 bg-card/85 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Top municípios</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">{topMunicipios[0]?.municipio ?? "Sem dados"}</CardContent>
-        </Card>
-        <Card className="border-border/70 bg-card/85 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de avaliação</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">{pct}%</CardContent>
-        </Card>
-        <Card className="border-border/70 bg-card/85 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Tempo médio por projeto</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">{tempoMedioHoras}h</CardContent>
-        </Card>
-      </div>
+      <DashboardMetricasClient projetos={projetosComMetrica} />
       <Card className="border-border/70 bg-card/85 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Progresso estimado</CardTitle>
@@ -167,22 +127,6 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <Card className="border-border/70 bg-card/85 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">Métricas por município e fase</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-1 text-sm text-muted-foreground">
-            {topMunicipios.map((m) => (
-              <li key={m.municipio}>
-                {m.municipio} — Total: {m.total} | Ideação: {m.ideacao} | Validação: {m.validacao} | Taxa avaliada:{" "}
-                {m.taxaAvaliacao}%
-              </li>
-            ))}
-            {topMunicipios.length === 0 && <li>Nenhum projeto cadastrado ainda.</li>}
-          </ul>
-        </CardContent>
-      </Card>
     </div>
   );
 }
