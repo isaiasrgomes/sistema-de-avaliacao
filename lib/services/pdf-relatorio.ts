@@ -1,5 +1,11 @@
 import PDFDocument from "pdfkit";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import fs from "node:fs";
+import path from "node:path";
+import SVGtoPDF from "svg-to-pdfkit";
+
+const logoPath = path.join(process.cwd(), "public", "logo-sertao-maker.svg");
+const logoSvg = fs.existsSync(logoPath) ? fs.readFileSync(logoPath, "utf-8") : null;
 
 function docHeader(doc: InstanceType<typeof PDFDocument>, titulo: string) {
   const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -12,17 +18,46 @@ function docHeader(doc: InstanceType<typeof PDFDocument>, titulo: string) {
     .fill("#1D4ED8");
   doc.restore();
 
+  if (logoSvg) {
+    SVGtoPDF(doc, logoSvg, doc.page.margins.left + 18, top + 12, {
+      width: 20,
+      height: 20,
+      preserveAspectRatio: "xMidYMid meet",
+    });
+  }
+
   doc.fillColor("#0F172A").fontSize(15).font("Helvetica-Bold");
-  doc.text("Sertao Maker - Edital 45/2026", doc.page.margins.left + 22, top + 14);
+  doc.text("Sertao Maker - Edital 45/2026", doc.page.margins.left + 44, top + 14);
   doc.fontSize(11).font("Helvetica");
-  doc.fillColor("#334155").text(titulo, doc.page.margins.left + 22, top + 36);
+  doc.fillColor("#334155").text(titulo, doc.page.margins.left + 44, top + 36);
   doc
     .fontSize(9)
     .fillColor("#64748B")
-    .text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, doc.page.margins.left + 22, top + 51);
+    .text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, doc.page.margins.left + 44, top + 51);
 
   doc.moveDown(4.2);
   doc.fillColor("#0F172A").font("Helvetica");
+}
+
+function aplicarRodapeInstitucional(doc: InstanceType<typeof PDFDocument>) {
+  const range = doc.bufferedPageRange();
+  for (let i = 0; i < range.count; i += 1) {
+    doc.switchToPage(i);
+    const y = doc.page.height - doc.page.margins.bottom + 8;
+    doc
+      .fontSize(8)
+      .fillColor("#64748B")
+      .text("Sertao Maker - Secretaria de Ciencia, Tecnologia e Inovacao", doc.page.margins.left, y, {
+        width: doc.page.width - doc.page.margins.left - doc.page.margins.right - 110,
+      });
+    doc
+      .fontSize(8)
+      .fillColor("#334155")
+      .text(`Pagina ${i + 1} de ${range.count}`, doc.page.width - doc.page.margins.right - 100, y, {
+        width: 100,
+        align: "right",
+      });
+  }
 }
 
 function drawRow(
@@ -76,7 +111,7 @@ export async function gerarRelatorioPDFBuffer(
   });
 
   const chunks: Buffer[] = [];
-  const doc = new PDFDocument({ margin: 50 });
+  const doc = new PDFDocument({ margin: 50, bufferPages: true });
   doc.on("data", (c) => chunks.push(c));
   const done = new Promise<Buffer>((resolve) => {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -130,6 +165,7 @@ export async function gerarRelatorioPDFBuffer(
     rowY += 24;
   }
 
+  aplicarRodapeInstitucional(doc);
   doc.end();
   return done;
 }
@@ -145,7 +181,7 @@ export async function gerarParecerProjetoPDFBuffer(
   const { data: avs } = await supabase.from("avaliacoes").select("*").in("atribuicao_id", ids);
 
   const chunks: Buffer[] = [];
-  const doc = new PDFDocument({ margin: 50 });
+  const doc = new PDFDocument({ margin: 50, bufferPages: true });
   doc.on("data", (c) => chunks.push(c));
   const done = new Promise<Buffer>((resolve) => {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -186,6 +222,7 @@ export async function gerarParecerProjetoPDFBuffer(
     .font("Helvetica")
     .fillColor("#334155")
     .text(`Quantidade de avaliacoes consolidadas: ${avs?.length ?? 0}`);
+  aplicarRodapeInstitucional(doc);
   doc.end();
   return done;
 }

@@ -8,6 +8,21 @@ export default async function ImportarPage() {
     .from("municipios_sertao")
     .select("municipio")
     .order("municipio", { ascending: true });
+  const sertaoLista = (municipiosSertao ?? []).map((m) => m.municipio);
+
+  let municipiosBrasil: string[] = [];
+  try {
+    const resp = await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome", {
+      next: { revalidate: 86400 },
+    });
+    if (resp.ok) {
+      const data = (await resp.json()) as { nome: string }[];
+      municipiosBrasil = data.map((m) => m.nome);
+    }
+  } catch {
+    municipiosBrasil = [];
+  }
+  const municipios = Array.from(new Set([...municipiosBrasil, ...sertaoLista])).sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -15,7 +30,7 @@ export default async function ImportarPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Inscricoes</h1>
         <p className="text-sm text-muted-foreground">Cadastre manualmente ou importe planilha exportada do Google Forms.</p>
       </div>
-      <ProjetoManualForm municipiosSertao={(municipiosSertao ?? []).map((m) => m.municipio)} />
+      <ProjetoManualForm municipios={municipios} />
       <ImportarCsvCard />
     </div>
   );

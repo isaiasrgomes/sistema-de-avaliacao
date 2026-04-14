@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Papa from "papaparse";
 import type { ProjetoFase, ProjetoStatus } from "@/lib/types/database";
+import { validarCNPJ, validarCPF, validarTelefoneBR } from "@/lib/utils/documentos";
 
 export interface ImportResult {
   inseridos: number;
@@ -146,6 +147,21 @@ export async function importarCSVProjetos(
       !r.timestamp_submissao
     ) {
       erros.push(`Linha incompleta: ${r.nome_projeto || r.cpf_responsavel || "?"}`);
+      ignorados++;
+      continue;
+    }
+    if (!validarCPF(r.cpf_responsavel)) {
+      erros.push(`CPF inválido — projeto ${r.nome_projeto || "?"}`);
+      ignorados++;
+      continue;
+    }
+    if (r.cnpj && !validarCNPJ(r.cnpj)) {
+      erros.push(`CNPJ inválido — projeto ${r.nome_projeto || "?"}`);
+      ignorados++;
+      continue;
+    }
+    if (r.telefone && !validarTelefoneBR(r.telefone)) {
+      erros.push(`Telefone inválido — projeto ${r.nome_projeto || "?"}`);
       ignorados++;
       continue;
     }

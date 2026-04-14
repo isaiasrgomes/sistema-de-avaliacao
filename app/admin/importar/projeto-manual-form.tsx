@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatarTelefoneBR } from "@/lib/utils/documentos";
 
 function somenteDigitos(v: string) {
   return v.replace(/\D/g, "");
@@ -38,7 +39,7 @@ function defaultTimestampLocal() {
   return d.toISOString().slice(0, 16);
 }
 
-export function ProjetoManualForm({ municipiosSertao }: { municipiosSertao: string[] }) {
+export function ProjetoManualForm({ municipios }: { municipios: string[] }) {
   const defaults = useMemo<ProjetoManualInput>(
     () => ({
       nome_projeto: "",
@@ -121,7 +122,15 @@ export function ProjetoManualForm({ municipiosSertao }: { municipiosSertao: stri
             </div>
             <div className="space-y-2">
               <Label htmlFor="telefone">Telefone</Label>
-              <Input id="telefone" {...form.register("telefone")} />
+              <Input
+                id="telefone"
+                placeholder="(87) 99999-9999"
+                value={form.watch("telefone") ?? ""}
+                onChange={(e) => form.setValue("telefone", formatarTelefoneBR(e.target.value), { shouldValidate: true })}
+              />
+              {form.formState.errors.telefone && (
+                <p className="text-xs text-destructive">{form.formState.errors.telefone.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="cnpj">CNPJ (opcional)</Label>
@@ -134,18 +143,17 @@ export function ProjetoManualForm({ municipiosSertao }: { municipiosSertao: stri
             </div>
             <div className="space-y-2">
               <Label htmlFor="municipio">Município *</Label>
-              <select
+              <Input
                 id="municipio"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                list="municipios-brasil"
+                placeholder="Digite para buscar..."
                 {...form.register("municipio")}
-              >
-                <option value="">Selecione um município</option>
-                {municipiosSertao.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
+              />
+              <datalist id="municipios-brasil">
+                {municipios.map((m) => (
+                  <option key={m} value={m} />
                 ))}
-              </select>
+              </datalist>
               {form.formState.errors.municipio && (
                 <p className="text-xs text-destructive">{form.formState.errors.municipio.message}</p>
               )}

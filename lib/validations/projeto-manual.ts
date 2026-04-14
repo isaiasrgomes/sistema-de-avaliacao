@@ -1,12 +1,25 @@
 import { z } from "zod";
+import { validarCNPJ, validarCPF, validarTelefoneBR } from "@/lib/utils/documentos";
 
 export const projetoManualSchema = z.object({
   nome_projeto: z.string().min(1, "Obrigatório").max(255),
   nome_responsavel: z.string().min(1, "Obrigatório").max(255),
   email_responsavel: z.string().email("E-mail inválido").max(255),
-  telefone: z.string().max(20).optional(),
-  cpf_responsavel: z.string().min(11, "CPF inválido").max(14),
-  cnpj: z.string().max(18).optional(),
+  telefone: z
+    .string()
+    .max(20)
+    .optional()
+    .refine((v) => !v || validarTelefoneBR(v), "Telefone inválido"),
+  cpf_responsavel: z
+    .string()
+    .min(11, "CPF inválido")
+    .max(14)
+    .refine((v) => validarCPF(v), "CPF inválido"),
+  cnpj: z
+    .string()
+    .max(18)
+    .optional()
+    .refine((v) => !v || validarCNPJ(v), "CNPJ inválido"),
   municipio: z.string().min(1, "Obrigatório").max(100),
   uf: z.literal("PE"),
   fase: z.enum(["IDEACAO", "VALIDACAO"]),

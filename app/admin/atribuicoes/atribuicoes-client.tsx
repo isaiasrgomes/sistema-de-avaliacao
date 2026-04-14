@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { actionAtribuicaoAuto, actionAtribuicaoManual, actionAtribuirTerceiro } from "@/app/actions/admin";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export function AtribuicoesClient({
   projetos,
@@ -18,6 +19,9 @@ export function AtribuicoesClient({
   const [a2, setA2] = useState("");
   const [projetoTerceiro, setProjetoTerceiro] = useState("");
   const [a3, setA3] = useState("");
+  const [isManualLoading, setIsManualLoading] = useState(false);
+  const [isTerceiroLoading, setIsTerceiroLoading] = useState(false);
+  const [isAutoLoading, setIsAutoLoading] = useState(false);
 
   return (
     <div className="grid gap-8 lg:grid-cols-3">
@@ -61,17 +65,21 @@ export function AtribuicoesClient({
           </select>
         </div>
         <Button
-          disabled={!projetoId || !a1 || !a2 || a1 === a2}
+          disabled={!projetoId || !a1 || !a2 || a1 === a2 || isManualLoading}
           onClick={async () => {
             try {
+              setIsManualLoading(true);
               await actionAtribuicaoManual(projetoId, a1, a2);
               toast.success("Atribuições salvas");
             } catch (e: unknown) {
               toast.error(e instanceof Error ? e.message : "Erro");
+            } finally {
+              setIsManualLoading(false);
             }
           }}
         >
-          Salvar manual
+          {isManualLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isManualLoading ? "Processando..." : "Salvar manual"}
         </Button>
       </div>
       <div className="space-y-4 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
@@ -103,18 +111,22 @@ export function AtribuicoesClient({
         </select>
         <Button
           variant="secondary"
-          disabled={!projetoTerceiro || !a3}
+          disabled={!projetoTerceiro || !a3 || isTerceiroLoading}
           onClick={async () => {
             try {
+              setIsTerceiroLoading(true);
               await actionAtribuirTerceiro(projetoTerceiro, a3);
               toast.success("3º avaliador atribuído");
               window.location.reload();
             } catch (e: unknown) {
               toast.error(e instanceof Error ? e.message : "Erro");
+            } finally {
+              setIsTerceiroLoading(false);
             }
           }}
         >
-          Atribuir 3º
+          {isTerceiroLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isTerceiroLoading ? "Processando..." : "Atribuir 3º"}
         </Button>
       </div>
       <div className="space-y-4 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
@@ -123,17 +135,22 @@ export function AtribuicoesClient({
           Distribui 2 avaliadores por projeto sem atribuição prévia, equilibrando carga e respeitando impedimentos cadastrados.
         </p>
         <Button
+          disabled={isAutoLoading}
           onClick={async () => {
             const ids = projetos.map((p) => p.id);
             try {
+              setIsAutoLoading(true);
               const r = await actionAtribuicaoAuto(ids);
               toast.success(`Atribuições criadas: ${r.criadas ?? 0}`);
             } catch (e: unknown) {
               toast.error(e instanceof Error ? e.message : "Erro");
+            } finally {
+              setIsAutoLoading(false);
             }
           }}
         >
-          Rodar automático (todos elegíveis)
+          {isAutoLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isAutoLoading ? "Processando..." : "Rodar automático (todos elegíveis)"}
         </Button>
       </div>
     </div>
