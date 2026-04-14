@@ -11,6 +11,27 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+function somenteDigitos(v: string) {
+  return v.replace(/\D/g, "");
+}
+
+function mascaraCpf(v: string) {
+  const d = somenteDigitos(v).slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+function mascaraCnpj(v: string) {
+  const d = somenteDigitos(v).slice(0, 14);
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
 function defaultTimestampLocal() {
   const d = new Date();
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -88,7 +109,12 @@ export function ProjetoManualForm({ municipiosSertao }: { municipiosSertao: stri
             </div>
             <div className="space-y-2">
               <Label htmlFor="cpf_responsavel">CPF do responsável *</Label>
-              <Input id="cpf_responsavel" placeholder="000.000.000-00" {...form.register("cpf_responsavel")} />
+              <Input
+                id="cpf_responsavel"
+                placeholder="000.000.000-00"
+                value={form.watch("cpf_responsavel") ?? ""}
+                onChange={(e) => form.setValue("cpf_responsavel", mascaraCpf(e.target.value), { shouldValidate: true })}
+              />
               {form.formState.errors.cpf_responsavel && (
                 <p className="text-xs text-destructive">{form.formState.errors.cpf_responsavel.message}</p>
               )}
@@ -99,7 +125,12 @@ export function ProjetoManualForm({ municipiosSertao }: { municipiosSertao: stri
             </div>
             <div className="space-y-2">
               <Label htmlFor="cnpj">CNPJ (opcional)</Label>
-              <Input id="cnpj" {...form.register("cnpj")} />
+              <Input
+                id="cnpj"
+                placeholder="00.000.000/0000-00"
+                value={form.watch("cnpj") ?? ""}
+                onChange={(e) => form.setValue("cnpj", mascaraCnpj(e.target.value), { shouldValidate: true })}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="municipio">Município *</Label>
