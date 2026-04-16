@@ -37,7 +37,11 @@ export function ImportarCsvCard() {
     <Card>
       <CardHeader>
         <CardTitle>Importar CSV (Google Forms)</CardTitle>
-        <CardDescription>Colunas são mapeadas automaticamente (nome do projeto, responsável, e-mail, CPF, município, etc.).</CardDescription>
+        <CardDescription>
+          Colunas são mapeadas automaticamente. Campos obrigatórios para importar: carimbo de data/hora, nome do proponente,
+          CPF, e-mail, nome do projeto/startup, município e setor de aplicação. Campos opcionais: telefone, CNPJ, fase e link
+          do pitch.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <input type="file" accept=".csv,text/csv" onChange={onFile} />

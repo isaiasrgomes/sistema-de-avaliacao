@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatarTelefoneBR } from "@/lib/utils/documentos";
 import type { UfBrasil } from "@/lib/constants/brasil";
 
 function somenteDigitos(v: string) {
@@ -23,15 +22,6 @@ function mascaraCpf(v: string) {
   if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
   if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
-}
-
-function mascaraCnpj(v: string) {
-  const d = somenteDigitos(v).slice(0, 14);
-  if (d.length <= 2) return d;
-  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`;
-  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`;
-  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
-  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
 
 function defaultTimestampLocal() {
@@ -123,24 +113,14 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
             </div>
             <div className="space-y-2">
               <Label htmlFor="telefone">Telefone</Label>
-              <Input
-                id="telefone"
-                placeholder="(87) 99999-9999"
-                value={form.watch("telefone") ?? ""}
-                onChange={(e) => form.setValue("telefone", formatarTelefoneBR(e.target.value), { shouldValidate: true })}
-              />
+              <Input id="telefone" placeholder="Telefone livre" {...form.register("telefone")} />
               {form.formState.errors.telefone && (
                 <p className="text-xs text-destructive">{form.formState.errors.telefone.message}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="cnpj">CNPJ (opcional)</Label>
-              <Input
-                id="cnpj"
-                placeholder="00.000.000/0000-00"
-                value={form.watch("cnpj") ?? ""}
-                onChange={(e) => form.setValue("cnpj", mascaraCnpj(e.target.value), { shouldValidate: true })}
-              />
+              <Input id="cnpj" placeholder="CNPJ livre" {...form.register("cnpj")} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="municipio">Município *</Label>

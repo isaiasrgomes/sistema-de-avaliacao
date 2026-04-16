@@ -108,20 +108,7 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <DashboardMetricasClient projetos={projetosComMetrica} />
-      <Card className="border-border/70 bg-card/85 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">Progresso estimado</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, pct)}%` }} />
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {pct}% dos elegíveis com ciclo encerrado (aproximação por status “Avaliado”).
-          </p>
-        </CardContent>
-      </Card>
+      <DashboardMetricasClient projetos={projetosComMetrica} progressoPct={pct} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader>

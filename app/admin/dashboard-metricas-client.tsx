@@ -15,7 +15,7 @@ type DashboardProjetoMetric = {
   first_eval_at: string | null;
 };
 
-export function DashboardMetricasClient({ projetos }: { projetos: DashboardProjetoMetric[] }) {
+export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: DashboardProjetoMetric[]; progressoPct: number }) {
   const [filtroMunicipio, setFiltroMunicipio] = useState("");
   const [filtroFase, setFiltroFase] = useState<"" | "IDEACAO" | "VALIDACAO">("");
 
@@ -304,6 +304,20 @@ export function DashboardMetricasClient({ projetos }: { projetos: DashboardProje
               <p className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Download className="h-3.5 w-3.5" />
                 Use “Exportar recorte (CSV)” para levar essa visão para BI/planilha.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/70 bg-card/85 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Progresso estimado</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, progressoPct)}%` }} />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {progressoPct}% dos elegíveis com ciclo encerrado (aproximação por status “Avaliado”).
               </p>
             </CardContent>
           </Card>
