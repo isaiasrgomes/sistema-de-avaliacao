@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +61,11 @@ export function LoginForm() {
     window.location.href = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, next);
   }
 
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await passwordLogin();
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="grid min-h-screen lg:grid-cols-2">
@@ -71,37 +76,39 @@ export function LoginForm() {
               <CardTitle className="sr-only">Entrar</CardTitle>
               <CardDescription>Acesso ao sistema de avaliação</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha (opcional)</Label>
-                <Input id="password" type="password" autoComplete="current-password" placeholder="••••••••" />
-              </div>
-              <Button className="w-full" disabled={loading || !email} onClick={magicLink}>
-                Enviar magic link
-              </Button>
-              <Button variant="secondary" className="w-full" disabled={loading || !email} onClick={passwordLogin}>
-                Entrar com senha
-              </Button>
-              <p className="text-center text-sm text-muted-foreground">
-                <Link href="/cadastro" className="underline">
-                  Criar conta (avaliador)
-                </Link>
-                {" · "}
-                <Link href="/resultado" className="underline">
-                  Resultado público
-                </Link>
-              </p>
+            <CardContent>
+              <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Senha (opcional)</Label>
+                  <Input id="password" type="password" autoComplete="current-password" placeholder="••••••••" />
+                </div>
+                <Button type="button" className="w-full" disabled={loading || !email} onClick={magicLink}>
+                  Enviar magic link
+                </Button>
+                <Button variant="secondary" className="w-full" type="submit" disabled={loading || !email}>
+                  Entrar com senha
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  <Link href="/cadastro" className="underline">
+                    Criar conta (avaliador)
+                  </Link>
+                  {" · "}
+                  <Link href="/resultado" className="underline">
+                    Resultado público
+                  </Link>
+                </p>
+              </form>
             </CardContent>
           </Card>
         </section>

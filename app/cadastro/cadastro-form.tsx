@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -60,6 +61,11 @@ export function CadastroAvaliadorForm() {
     toast.success("Conta criada. Verifique o e-mail para confirmar o cadastro, se solicitado.");
   }
 
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await criarConta();
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="grid min-h-screen lg:grid-cols-2">
@@ -78,58 +84,60 @@ export function CadastroAvaliadorForm() {
                 Após criar a conta, um coordenador precisa aprovar seu cadastro para liberar o acesso às avaliações.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome completo</Label>
-                <Input
-                  id="nome"
-                  autoComplete="name"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  placeholder="Seu nome"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="senha">Senha</Label>
-                <Input
-                  id="senha"
-                  type="password"
-                  autoComplete="new-password"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="senha2">Confirmar senha</Label>
-                <Input
-                  id="senha2"
-                  type="password"
-                  autoComplete="new-password"
-                  value={senha2}
-                  onChange={(e) => setSenha2(e.target.value)}
-                />
-              </div>
-              <Button className="w-full" disabled={loading} onClick={() => void criarConta()}>
-                {loading ? "Criando conta…" : "Criar conta"}
-              </Button>
-              <p className="text-center text-sm text-muted-foreground">
-                Já tem conta?{" "}
-                <Link href="/login" className="underline">
-                  Entrar
-                </Link>
-              </p>
+            <CardContent>
+              <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
+                <div className="space-y-2">
+                  <Label htmlFor="nome">Nome completo</Label>
+                  <Input
+                    id="nome"
+                    autoComplete="name"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    placeholder="Seu nome"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="senha">Senha</Label>
+                  <Input
+                    id="senha"
+                    type="password"
+                    autoComplete="new-password"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="senha2">Confirmar senha</Label>
+                  <Input
+                    id="senha2"
+                    type="password"
+                    autoComplete="new-password"
+                    value={senha2}
+                    onChange={(e) => setSenha2(e.target.value)}
+                  />
+                </div>
+                <Button className="w-full" type="submit" disabled={loading}>
+                  {loading ? "Criando conta…" : "Criar conta"}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Já tem conta?{" "}
+                  <Link href="/login" className="underline">
+                    Entrar
+                  </Link>
+                </p>
+              </form>
             </CardContent>
           </Card>
         </section>

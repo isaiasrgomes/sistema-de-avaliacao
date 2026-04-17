@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getStatusLabel } from "@/lib/utils/status";
 
 export default async function AvaliadorHomePage() {
   const supabase = await createServerSupabase();
@@ -55,9 +56,9 @@ export default async function AvaliadorHomePage() {
                 <TableCell className="font-medium">{p?.nome_projeto ?? a.projeto_id}</TableCell>
                 <TableCell>{a.ordem}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{a.status}</Badge>
+                  <Badge variant="outline">{getStatusLabel(a.status)}</Badge>
                 </TableCell>
-                <TableCell>{p?.status}</TableCell>
+                <TableCell>{getStatusLabel(p?.status)}</TableCell>
                 <TableCell className="text-right">
                   <Button asChild size="sm">
                     <Link prefetch href={`/avaliador/projeto/${a.projeto_id}?atribuicao=${a.id}`}>
