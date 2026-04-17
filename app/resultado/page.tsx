@@ -48,7 +48,7 @@ export default function ResultadoPublicoPage() {
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-8">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-primary">Sertão Inovador — Resultado</h1>
+        <h1 className="text-2xl font-bold text-primary">Resultado</h1>
         <p className="text-muted-foreground">Edital 45/2026 — ordem alfabética</p>
       </div>
       {msg && <p className="text-center text-sm text-muted-foreground">{msg}</p>}

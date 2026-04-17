@@ -1,4 +1,4 @@
--- Sertão Inovador — Edital 45/2026
+-- Sistema de avaliacao — Edital 45/2026
 -- Execute no SQL Editor do Supabase (ordem única)
 
 -- Extensões

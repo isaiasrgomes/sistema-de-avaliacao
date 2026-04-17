@@ -4,36 +4,39 @@ import fs from "node:fs";
 import path from "node:path";
 import SVGtoPDF from "svg-to-pdfkit";
 
-const logoPath = path.join(process.cwd(), "public", "logo-sertao-maker.svg");
-const logoSvg = fs.existsSync(logoPath) ? fs.readFileSync(logoPath, "utf-8") : null;
+const logosStackedPath = path.join(process.cwd(), "public", "logos-em-cima.svg");
+const logosStackedSvg = fs.existsSync(logosStackedPath) ? fs.readFileSync(logosStackedPath, "utf-8") : null;
 
 function docHeader(doc: InstanceType<typeof PDFDocument>, titulo: string) {
   const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const left = doc.page.margins.left;
   const top = doc.y;
 
   doc.save();
-  doc.roundedRect(doc.page.margins.left, top, pageWidth, 68, 10).fill("#F1F7FF");
-  doc
-    .roundedRect(doc.page.margins.left + 10, top + 10, 5, 48, 3)
-    .fill("#1D4ED8");
+  doc.roundedRect(left, top, pageWidth, 68, 10).fill("#F3F4F6");
   doc.restore();
 
-  if (logoSvg) {
-    SVGtoPDF(doc, logoSvg, doc.page.margins.left + 18, top + 12, {
-      width: 20,
-      height: 20,
+  const logoStripX = left + 14;
+  const logoStripY = top + 8;
+  const logoStripW = 92;
+
+  if (logosStackedSvg) {
+    SVGtoPDF(doc, logosStackedSvg, logoStripX, logoStripY, {
+      width: logoStripW,
+      height: 54,
       preserveAspectRatio: "xMidYMid meet",
     });
   }
 
+  const textX = logoStripX + logoStripW + 14;
   doc.fillColor("#0F172A").fontSize(15).font("Helvetica-Bold");
-  doc.text("Sertao Maker - Edital 45/2026", doc.page.margins.left + 44, top + 14);
+  doc.text("SerTão Inovador - Edital 45/2026", textX, top + 14);
   doc.fontSize(11).font("Helvetica");
-  doc.fillColor("#334155").text(titulo, doc.page.margins.left + 44, top + 36);
+  doc.fillColor("#334155").text(titulo, textX, top + 36);
   doc
     .fontSize(9)
     .fillColor("#64748B")
-    .text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, doc.page.margins.left + 44, top + 51);
+    .text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, textX, top + 51);
 
   doc.moveDown(4.2);
   doc.fillColor("#0F172A").font("Helvetica");
@@ -47,7 +50,7 @@ function aplicarRodapeInstitucional(doc: InstanceType<typeof PDFDocument>) {
     doc
       .fontSize(8)
       .fillColor("#64748B")
-      .text("Sertao Maker - Secretaria de Ciencia, Tecnologia e Inovacao", doc.page.margins.left, y, {
+      .text("Sistema de Avaliacao - Secretaria de Ciencia, Tecnologia e Inovacao", doc.page.margins.left, y, {
         width: doc.page.width - doc.page.margins.left - doc.page.margins.right - 110,
       });
     doc
@@ -126,8 +129,8 @@ export async function gerarRelatorioPDFBuffer(
   const tableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
   let rowY = doc.y;
 
-  doc.roundedRect(tableX, rowY, tableWidth, 22, 6).fill("#DBEAFE");
-  doc.fillColor("#1E3A8A").font("Helvetica-Bold").fontSize(9);
+  doc.roundedRect(tableX, rowY, tableWidth, 22, 6).fill("#E8F5E9");
+  doc.fillColor("#14532D").font("Helvetica-Bold").fontSize(9);
   drawRow(doc, rowY, "#", "Projeto", "Responsavel", "Municipio", "Nota", "Status");
   doc.font("Helvetica");
   rowY += 24;
@@ -141,8 +144,8 @@ export async function gerarRelatorioPDFBuffer(
     if (rowY > doc.page.height - 90) {
       doc.addPage();
       rowY = doc.page.margins.top;
-      doc.roundedRect(tableX, rowY, tableWidth, 22, 6).fill("#DBEAFE");
-      doc.fillColor("#1E3A8A").font("Helvetica-Bold").fontSize(9);
+      doc.roundedRect(tableX, rowY, tableWidth, 22, 6).fill("#E8F5E9");
+      doc.fillColor("#14532D").font("Helvetica-Bold").fontSize(9);
       drawRow(doc, rowY, "#", "Projeto", "Responsavel", "Municipio", "Nota", "Status");
       doc.font("Helvetica");
       rowY += 24;
@@ -200,9 +203,9 @@ export async function gerarParecerProjetoPDFBuffer(
     doc.moveDown(1.6);
   }
   if (res) {
-    doc.roundedRect(doc.page.margins.left, doc.y, doc.page.width - 100, 84, 8).fill("#EFF6FF");
+    doc.roundedRect(doc.page.margins.left, doc.y, doc.page.width - 100, 84, 8).fill("#FFEBEE");
     const resultTop = doc.y - 84;
-    doc.fillColor("#1E3A8A").font("Helvetica-Bold").text("Resultado Consolidado", doc.page.margins.left + 12, resultTop + 10);
+    doc.fillColor("#991B1B").font("Helvetica-Bold").text("Resultado Consolidado", doc.page.margins.left + 12, resultTop + 10);
     doc.font("Helvetica").fillColor("#1E293B");
     doc.text(`Nota final: ${Number(res.nota_final ?? 0).toFixed(2)}`, doc.page.margins.left + 12, resultTop + 30);
     doc.text(`Status: ${res.status_final ?? "-"}`);

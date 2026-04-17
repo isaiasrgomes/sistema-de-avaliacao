@@ -28,7 +28,7 @@ export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center gap-8 px-6 py-10">
       <div className="flex flex-col items-center gap-4 text-center">
-        <SertaoMakerBrand variant="full" align="center" className="flex-col gap-4 sm:flex-row sm:gap-6" />
+        <SertaoMakerBrand layout="sideBySide" variant="full" align="center" className="origin-center scale-110 sm:scale-125" />
         <p className="max-w-lg text-sm text-muted-foreground">
           Avaliação e ranqueamento de projetos com transparência e rastreabilidade.
         </p>

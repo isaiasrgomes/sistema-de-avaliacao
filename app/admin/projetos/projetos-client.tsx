@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import type { Projeto, ProjetoFase, ProjetoStatus } from "@/lib/types/database";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -48,28 +47,69 @@ function labelFase(fase: ProjetoFase) {
 export function ProjetosClient({ initial }: { initial: Projeto[] }) {
   const [municipio, setMunicipio] = useState("");
   const [fase, setFase] = useState<ProjetoFase | "">("");
-  const [setor, setSetor] = useState("");
   const [status, setStatus] = useState<ProjetoStatus | "">("");
   const [motivo, setMotivo] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
+  const municipiosDisponiveis = useMemo(() => {
+    return Array.from(new Set(initial.map((p) => p.municipio).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [initial]);
+
   const filtrados = useMemo(() => {
     return initial.filter((p) => {
-      if (municipio && !p.municipio.toLowerCase().includes(municipio.toLowerCase())) return false;
+      if (municipio && p.municipio !== municipio) return false;
       if (fase && p.fase !== fase) return false;
-      if (setor && !p.categoria_setor.toLowerCase().includes(setor.toLowerCase())) return false;
       if (status && p.status !== status) return false;
       return true;
     });
-  }, [initial, municipio, fase, setor, status]);
+  }, [initial, municipio, fase, status]);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
-        <Input placeholder="Município" value={municipio} onChange={(e) => setMunicipio(e.target.value)} className="max-w-xs" />
-        <Input placeholder="Fase (IDEACAO/VALIDACAO)" value={fase} onChange={(e) => setFase(e.target.value as ProjetoFase)} className="max-w-xs" />
-        <Input placeholder="Setor" value={setor} onChange={(e) => setSetor(e.target.value)} className="max-w-xs" />
-        <Input placeholder="Status" value={status} onChange={(e) => setStatus(e.target.value as ProjetoStatus)} className="max-w-xs" />
+        <select
+          value={municipio}
+          onChange={(e) => setMunicipio(e.target.value)}
+          className="h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+        >
+          <option value="">Município (todos)</option>
+          {municipiosDisponiveis.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+        <select
+          value={fase}
+          onChange={(e) => setFase(e.target.value as ProjetoFase | "")}
+          className="h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+        >
+          <option value="">Fase (todas)</option>
+          <option value="IDEACAO">Ideação</option>
+          <option value="VALIDACAO">Validação</option>
+        </select>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as ProjetoStatus | "")}
+          className="h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+        >
+          <option value="">Status (todos)</option>
+          <option value="INSCRITO">Inscrito</option>
+          <option value="DESCLASSIFICADO">Desclassificado</option>
+          <option value="EM_AVALIACAO">Em Avaliação</option>
+          <option value="AGUARDANDO_3O_AVALIADOR">Aguardando 3º avaliador</option>
+          <option value="AVALIADO">Avaliado</option>
+          <option value="SELECIONADO">Selecionado</option>
+          <option value="SUPLENTE">Suplente</option>
+          <option value="NAO_SELECIONADO">Não selecionado</option>
+        </select>
+        <Button variant="outline" onClick={() => {
+          setMunicipio("");
+          setFase("");
+          setStatus("");
+        }}>
+          Limpar filtros
+        </Button>
       </div>
       <div className="overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm">
       <Table>

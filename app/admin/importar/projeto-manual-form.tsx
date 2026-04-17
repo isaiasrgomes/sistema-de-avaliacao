@@ -113,14 +113,14 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
             </div>
             <div className="space-y-2">
               <Label htmlFor="telefone">Telefone</Label>
-              <Input id="telefone" placeholder="Telefone livre" {...form.register("telefone")} />
+              <Input id="telefone" placeholder="(00) 00000-0000" {...form.register("telefone")} />
               {form.formState.errors.telefone && (
                 <p className="text-xs text-destructive">{form.formState.errors.telefone.message}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="cnpj">CNPJ (opcional)</Label>
-              <Input id="cnpj" placeholder="CNPJ livre" {...form.register("cnpj")} />
+              <Input id="cnpj" placeholder="00.000.000/0000-00" {...form.register("cnpj")} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="municipio">Município *</Label>

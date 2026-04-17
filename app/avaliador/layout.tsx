@@ -17,7 +17,7 @@ export default async function AvaliadorLayout({ children }: { children: React.Re
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 bg-card/90 px-4 py-3 backdrop-blur-sm">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <Link href="/avaliador" prefetch className="min-w-0 shrink">
-            <SertaoMakerBrand variant="compact" className="gap-2.5" />
+            <SertaoMakerBrand variant="full" layout="sideBySide" className="gap-2.5" />
           </Link>
           <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
           <span className="hidden text-sm font-medium text-muted-foreground sm:inline">Área do avaliador</span>

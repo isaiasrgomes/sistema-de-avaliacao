@@ -236,7 +236,7 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
           <Card className="border-border/70 bg-card/85 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <CalendarRange className="h-4 w-4 text-blue-500" />
+                <CalendarRange className="h-4 w-4 text-primary" />
                 Tendência temporal (mês)
               </CardTitle>
             </CardHeader>

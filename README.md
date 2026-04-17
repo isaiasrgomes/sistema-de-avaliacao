@@ -1,4 +1,4 @@
-# Sertão Inovador — Avaliação e ranqueamento (Edital 45/2026)
+# Avaliação e ranqueamento (Edital 45/2026)
 
 Repositório: [github.com/isaiasrgomes/sistema-de-avaliacao](https://github.com/isaiasrgomes/sistema-de-avaliacao)
 

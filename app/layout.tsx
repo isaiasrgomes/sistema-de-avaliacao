@@ -6,8 +6,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Sistema de Avaliação Sertão Maker — Edital 45/2026",
-  description: "Sistema de avaliação e ranqueamento de projetos — Sertão Maker, Edital 45/2026",
+  title: "Sistema de Avaliação — Edital 45/2026",
+  description: "Sistema de avaliação e ranqueamento de projetos do Edital 45/2026",
 };
 
 export default function RootLayout({
