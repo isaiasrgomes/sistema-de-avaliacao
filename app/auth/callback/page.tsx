@@ -32,14 +32,7 @@ function AuthCallbackInner() {
 
       const code = url.searchParams.get("code");
 
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          setMessage(error.message);
-          router.replace(`/login?error=${encodeURIComponent(error.message)}`);
-          return;
-        }
-      } else if (url.hash && url.hash.length > 1) {
+      if (url.hash && url.hash.length > 1) {
         const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
         const access_token = hash.get("access_token");
         const refresh_token = hash.get("refresh_token");
@@ -50,6 +43,13 @@ function AuthCallbackInner() {
             router.replace(`/login?error=${encodeURIComponent(error.message)}`);
             return;
           }
+        }
+      } else if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          setMessage(error.message);
+          router.replace(`/login?error=${encodeURIComponent(error.message)}`);
+          return;
         }
       }
 
