@@ -11,8 +11,13 @@ async function requireAvaliador() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Não autenticado");
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, cadastro_aprovado")
+    .eq("id", user.id)
+    .single();
   if (profile?.role === "COORDENADOR") throw new Error("Use o painel admin");
+  if (profile?.cadastro_aprovado !== true) throw new Error("Seu cadastro ainda não foi aprovado por um coordenador.");
   const email = (user.email ?? "").trim().toLowerCase();
   const { data: av } = await supabase.from("avaliadores").select("id").ilike("email", email).maybeSingle();
   if (!av) throw new Error("Avaliador não vinculado ao e-mail do login. Cadastre o mesmo e-mail em Avaliadores.");

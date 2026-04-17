@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, Upload, Users, Link2, LineChart, Trophy, FileText, Scale, LogOut } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { SertaoMakerBrand } from "@/components/brand-logo";
 
@@ -22,7 +21,6 @@ const items = [
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
 
   return (
     <aside className="sticky top-0 flex h-screen w-64 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl">
@@ -53,8 +51,9 @@ export function AdminSidebar() {
           variant="ghost"
           className="w-full justify-start gap-2 rounded-lg text-foreground/80 hover:bg-destructive/10 hover:text-destructive"
           onClick={async () => {
-            await supabase.auth.signOut();
-            router.push("/");
+            const res = await fetch("/auth/signout?next=/", { method: "POST" });
+            const to = res.redirected ? res.url : "/";
+            router.push(to);
             router.refresh();
           }}
         >

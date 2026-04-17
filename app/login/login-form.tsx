@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SertaoMakerBrand } from "@/components/brand-logo";
 import { toast } from "sonner";
+import { destinoAposLogin } from "@/lib/auth/destino-pos-login";
 
 export function LoginForm() {
   const search = useSearchParams();
@@ -52,9 +53,12 @@ export function LoginForm() {
       toast.error(error.message);
       return;
     }
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
-    const dest = profile?.role === "COORDENADOR" ? "/admin" : next;
-    window.location.href = dest;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, cadastro_aprovado")
+      .eq("id", data.user.id)
+      .single();
+    window.location.href = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, next);
   }
 
   return (
@@ -63,12 +67,6 @@ export function LoginForm() {
         <section className="order-2 flex items-center justify-center px-4 py-8 sm:px-8 lg:order-2 lg:px-12">
           <Card className="w-full max-w-md border-border/70 bg-card/90 shadow-lg backdrop-blur">
             <CardHeader className="space-y-4">
-              <Button variant="ghost" size="sm" className="-ml-2 w-fit gap-1 text-muted-foreground" asChild>
-                <Link href="/">
-                  <ArrowLeft className="h-4 w-4" />
-                  Voltar ao início
-                </Link>
-              </Button>
               <SertaoMakerBrand variant="full" className="flex-col items-start gap-3 sm:flex-row sm:items-center" />
               <CardTitle className="sr-only">Entrar</CardTitle>
               <CardDescription>Acesso ao sistema de avaliação</CardDescription>
@@ -96,6 +94,10 @@ export function LoginForm() {
                 Entrar com senha
               </Button>
               <p className="text-center text-sm text-muted-foreground">
+                <Link href="/cadastro" className="underline">
+                  Criar conta (avaliador)
+                </Link>
+                {" · "}
                 <Link href="/resultado" className="underline">
                   Resultado público
                 </Link>

@@ -24,9 +24,9 @@ export default async function AvaliadorLayout({ children }: { children: React.Re
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {user?.email}
-          <form action="/auth/signout" method="post">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/login">Sair</Link>
+          <form action="/auth/signout?next=/" method="post">
+            <Button variant="ghost" size="sm" type="submit">
+              Sair
             </Button>
           </form>
         </div>

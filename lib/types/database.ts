@@ -20,6 +20,8 @@ export interface Profile {
   id: string;
   role: ProfileRole;
   nome: string;
+  email: string | null;
+  cadastro_aprovado: boolean;
   criado_em: string;
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { destinoAposLogin } from "@/lib/auth/destino-pos-login";
 
 function AuthCallbackInner() {
   const router = useRouter();
@@ -65,8 +66,12 @@ function AuthCallbackInner() {
         return;
       }
 
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-      const dest = profile?.role === "COORDENADOR" ? "/admin" : next;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, cadastro_aprovado")
+        .eq("id", user.id)
+        .single();
+      const dest = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, next);
       window.location.replace(dest);
     };
 

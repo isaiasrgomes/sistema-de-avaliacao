@@ -7,11 +7,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { avaliacaoSchema, type AvaliacaoForm } from "@/lib/validations/avaliacao";
 import { calcularNotaPonderada } from "@/lib/services/nota";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { actionDeclararImpedimento, actionEnviarAvaliacao } from "@/app/actions/avaliador";
 import { toast } from "sonner";
+import { Star } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,39 @@ function formatarValor(chave: string, valor: unknown) {
   return String(valor);
 }
 
+function StarRating({
+  value,
+  onChange,
+  disabled,
+  name,
+}: {
+  value: number | undefined;
+  onChange: (v: number) => void;
+  disabled?: boolean;
+  name: string;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      {([1, 2, 3, 4, 5] as const).map((n) => {
+        const active = (value ?? 0) >= n;
+        return (
+          <button
+            key={n}
+            type="button"
+            disabled={disabled}
+            aria-label={`${name}: ${n} de 5`}
+            onClick={() => onChange(n)}
+            className="rounded p-1 disabled:cursor-not-allowed"
+          >
+            <Star className={active ? "h-6 w-6 fill-amber-400 text-amber-500" : "h-6 w-6 text-muted-foreground"} />
+          </button>
+        );
+      })}
+      <span className="ml-2 text-sm text-muted-foreground">{value ? `${value}/5` : "Selecione"}</span>
+    </div>
+  );
+}
+
 export function AvaliacaoForm({
   projetoId,
   atribuicaoId,
@@ -57,10 +90,10 @@ export function AvaliacaoForm({
   const form = useForm<AvaliacaoForm>({
     resolver: zodResolver(avaliacaoSchema),
     defaultValues: {
-      nota_equipe: (initial?.nota_equipe as number) ?? 3,
-      nota_mercado: (initial?.nota_mercado as number) ?? 3,
-      nota_produto: (initial?.nota_produto as number) ?? 3,
-      nota_tecnologia: (initial?.nota_tecnologia as number) ?? 3,
+      nota_equipe: (initial?.nota_equipe as number) ?? (undefined as unknown as number),
+      nota_mercado: (initial?.nota_mercado as number) ?? (undefined as unknown as number),
+      nota_produto: (initial?.nota_produto as number) ?? (undefined as unknown as number),
+      nota_tecnologia: (initial?.nota_tecnologia as number) ?? (undefined as unknown as number),
       justificativa_geral: (initial?.justificativa_geral as string) ?? "",
       observacoes_gerais: (initial?.observacoes_gerais as string) ?? "",
     },
@@ -126,16 +159,30 @@ export function AvaliacaoForm({
         }
       })}
     >
-      <div className="grid gap-4 sm:grid-cols-2">
-        {(["nota_equipe", "nota_mercado", "nota_produto", "nota_tecnologia"] as const).map((f) => (
-          <div key={f} className="space-y-2">
-            <Label>{f.replace("nota_", "Nota ")}</Label>
-            <Input type="number" min={1} max={5} {...form.register(f, { valueAsNumber: true })} />
-            {form.formState.errors[f] && (
-              <p className="text-xs text-destructive">{form.formState.errors[f]?.message as string}</p>
-            )}
-          </div>
-        ))}
+      <div className="space-y-4">
+        {(
+          [
+            { key: "nota_equipe", label: "Equipe" },
+            { key: "nota_mercado", label: "Mercado" },
+            { key: "nota_produto", label: "Produto" },
+            { key: "nota_tecnologia", label: "Tecnologia" },
+          ] as const
+        ).map(({ key, label }) => {
+          const v = form.watch(key);
+          return (
+            <div key={key} className="space-y-2">
+              <Label>{`Nota - ${label}`}</Label>
+              <StarRating
+                name={label}
+                value={typeof v === "number" ? v : undefined}
+                onChange={(n) => form.setValue(key, n as any, { shouldValidate: true, shouldDirty: true })}
+              />
+              {form.formState.errors[key] && (
+                <p className="text-xs text-destructive">{form.formState.errors[key]?.message as string}</p>
+              )}
+            </div>
+          );
+        })}
       </div>
       <div className="rounded-md bg-muted p-3 text-sm">
         Nota total ponderada (tempo real): <strong>{total.toFixed(2)}</strong> (20–100)

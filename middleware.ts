@@ -32,6 +32,42 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
+  if (path === "/cadastro" || path.startsWith("/cadastro/")) {
+    if (!user) {
+      return response;
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, cadastro_aprovado")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role === "COORDENADOR") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    if (profile?.cadastro_aprovado === true) {
+      return NextResponse.redirect(new URL("/avaliador", request.url));
+    }
+    return NextResponse.redirect(new URL("/aguardando-aprovacao", request.url));
+  }
+
+  if (path === "/aguardando-aprovacao" || path.startsWith("/aguardando-aprovacao/")) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/login?next=/aguardando-aprovacao", request.url));
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, cadastro_aprovado")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role === "COORDENADOR") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    if (profile?.cadastro_aprovado === true) {
+      return NextResponse.redirect(new URL("/avaliador", request.url));
+    }
+    return response;
+  }
+
   if (path.startsWith("/admin")) {
     if (!user) {
       return NextResponse.redirect(new URL("/login?next=/admin", request.url));
@@ -52,11 +88,14 @@ export async function middleware(request: NextRequest) {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, cadastro_aprovado")
       .eq("id", user.id)
       .single();
     if (profile?.role === "COORDENADOR") {
       return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    if (profile?.cadastro_aprovado !== true) {
+      return NextResponse.redirect(new URL("/aguardando-aprovacao", request.url));
     }
   }
 
@@ -64,5 +103,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/avaliador/:path*"],
+  matcher: [
+    "/admin/:path*",
+    "/avaliador/:path*",
+    "/cadastro",
+    "/cadastro/:path*",
+    "/aguardando-aprovacao",
+    "/aguardando-aprovacao/:path*",
+  ],
 };

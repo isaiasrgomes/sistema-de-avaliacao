@@ -18,6 +18,33 @@ import { Label } from "@/components/ui/label";
 import { actionDesclassificar, actionReclassificar } from "@/app/actions/admin";
 import { toast } from "sonner";
 
+function labelStatus(status: ProjetoStatus) {
+  switch (status) {
+    case "INSCRITO":
+      return "Inscrito";
+    case "DESCLASSIFICADO":
+      return "Desclassificado";
+    case "EM_AVALIACAO":
+      return "Em Avaliação";
+    case "AGUARDANDO_3O_AVALIADOR":
+      return "Aguardando 3º avaliador";
+    case "AVALIADO":
+      return "Avaliado";
+    case "SELECIONADO":
+      return "Selecionado";
+    case "SUPLENTE":
+      return "Suplente";
+    case "NAO_SELECIONADO":
+      return "Não selecionado";
+    default:
+      return status;
+  }
+}
+
+function labelFase(fase: ProjetoFase) {
+  return fase === "IDEACAO" ? "Ideação" : "Validação";
+}
+
 export function ProjetosClient({ initial }: { initial: Projeto[] }) {
   const [municipio, setMunicipio] = useState("");
   const [fase, setFase] = useState<ProjetoFase | "">("");
@@ -62,9 +89,9 @@ export function ProjetosClient({ initial }: { initial: Projeto[] }) {
               <TableCell className="font-medium">{p.nome_projeto}</TableCell>
               <TableCell>{p.nome_responsavel}</TableCell>
               <TableCell>{p.municipio}</TableCell>
-              <TableCell>{p.fase}</TableCell>
+              <TableCell>{labelFase(p.fase)}</TableCell>
               <TableCell>
-                <Badge variant="outline">{p.status}</Badge>
+                <Badge variant="outline">{labelStatus(p.status)}</Badge>
                 {p.is_sertao && (
                   <Badge className="ml-1" variant="secondary">
                     Sertão

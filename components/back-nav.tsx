@@ -26,12 +26,7 @@ export function BackNav({
   return (
     <div className={cn("mb-4 flex flex-wrap items-center gap-2 border-b border-border/60 pb-3", className)}>
       {isRoot ? (
-        <Button variant="outline" size="sm" className="gap-1.5 border-border/80 bg-card/70" asChild>
-          <Link href="/">
-            <ArrowLeft className="h-4 w-4" />
-            Voltar ao site
-          </Link>
-        </Button>
+        <div />
       ) : (
         <>
           <Button variant="outline" size="sm" className="gap-1.5 border-border/80 bg-card/70" asChild>
@@ -39,9 +34,6 @@ export function BackNav({
               <ArrowLeft className="h-4 w-4" />
               {primaryLabel}
             </Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/">Início</Link>
           </Button>
         </>
       )}
