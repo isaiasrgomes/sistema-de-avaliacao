@@ -175,7 +175,7 @@ export function AvaliacaoForm({
               <StarRating
                 name={label}
                 value={typeof v === "number" ? v : undefined}
-                onChange={(n) => form.setValue(key, n as any, { shouldValidate: true, shouldDirty: true })}
+                onChange={(n) => form.setValue(key, n, { shouldValidate: true, shouldDirty: true })}
               />
               {form.formState.errors[key] && (
                 <p className="text-xs text-destructive">{form.formState.errors[key]?.message as string}</p>
