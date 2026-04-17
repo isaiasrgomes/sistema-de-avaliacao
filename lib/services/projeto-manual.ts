@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ProjetoFase, ProjetoStatus } from "@/lib/types/database";
 import type { ProjetoManualInput } from "@/lib/validations/projeto-manual";
+import { corrigirMunicipioPeloCatalogo } from "@/lib/utils/municipios";
 
 function norm(s: string | null | undefined) {
   return (s ?? "").trim();
@@ -26,8 +27,11 @@ export async function cadastrarOuAtualizarProjetoManual(
   }
 
   const { data: sertaoRows } = await supabase.from("municipios_sertao").select("municipio");
-  const sertaoSet = new Set((sertaoRows ?? []).map((r) => norm(r.municipio).toLowerCase()));
-  const isSertao = sertaoSet.has(norm(input.municipio).toLowerCase());
+  const sertaoCatalogo = (sertaoRows ?? []).map((r) => norm(r.municipio)).filter(Boolean);
+  const municipioFix = corrigirMunicipioPeloCatalogo(input.municipio, sertaoCatalogo);
+  const municipioCanonico = norm(municipioFix.municipio);
+  const sertaoSet = new Set(sertaoCatalogo.map((m) => m.toLowerCase()));
+  const isSertao = sertaoSet.has(municipioCanonico.toLowerCase());
 
   const payload = {
     nome_projeto: norm(input.nome_projeto),
@@ -36,7 +40,7 @@ export async function cadastrarOuAtualizarProjetoManual(
     telefone: norm(input.telefone),
     cpf_responsavel: norm(input.cpf_responsavel),
     cnpj: norm(input.cnpj),
-    municipio: norm(input.municipio),
+    municipio: municipioCanonico,
     uf: norm(input.uf).toUpperCase(),
     fase: input.fase as ProjetoFase,
     categoria_setor: norm(input.categoria_setor),

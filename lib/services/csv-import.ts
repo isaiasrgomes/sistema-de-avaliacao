@@ -3,6 +3,7 @@ import Papa from "papaparse";
 import type { ProjetoFase, ProjetoStatus } from "@/lib/types/database";
 import { validarCPF } from "@/lib/utils/documentos";
 import { UFS_BRASIL } from "@/lib/constants/brasil";
+import { corrigirMunicipioPeloCatalogo } from "@/lib/utils/municipios";
 
 export interface ImportResult {
   inseridos: number;
@@ -135,7 +136,8 @@ export async function importarCSVProjetos(
   }
 
   const { data: sertaoRows } = await supabase.from("municipios_sertao").select("municipio");
-  const sertaoSet = new Set((sertaoRows ?? []).map((r) => norm(r.municipio).toLowerCase()));
+  const sertaoCatalogo = (sertaoRows ?? []).map((r) => norm(r.municipio)).filter(Boolean);
+  const sertaoSet = new Set(sertaoCatalogo.map((m) => m.toLowerCase()));
 
   const rows = (parsed.data ?? []).map((raw) => {
     const o: Record<string, string> = {};
@@ -179,7 +181,8 @@ export async function importarCSVProjetos(
     const nomeResponsavel = limitarCampo(norm(r.nome_responsavel), 255);
     const emailResponsavel = limitarCampo(norm(r.email_responsavel), 255);
     const cpfResponsavel = somenteDigitos(norm(r.cpf_responsavel));
-    const municipio = normalizarMunicipio(r.municipio);
+    const municipioFix = corrigirMunicipioPeloCatalogo(r.municipio, sertaoCatalogo);
+    const municipio = limitarCampo(norm(municipioFix.municipio), 255);
     const categoriaSetor = normalizarCategoriaSetor(r.categoria_setor);
 
     const uf = (r.uf || "PE").toUpperCase();
