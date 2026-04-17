@@ -38,10 +38,6 @@ function normalizarCategoriaSetor(valor: string) {
   return norm(valor).split(",")[0]?.trim() ?? "";
 }
 
-function normalizarMunicipio(valor: string) {
-  return norm(valor);
-}
-
 function mapHeader(h: string) {
   const k = normalizeHeaderKey(h);
   const aliases: Record<string, string> = {
