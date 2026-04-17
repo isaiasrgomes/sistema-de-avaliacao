@@ -27,6 +27,6 @@ export function buildAuthCallbackUrl(next: string) {
   if (!origin) return "";
 
   const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH || "");
-  const callbackPath = `${basePath}/auth/callback`;
+  const callbackPath = `${basePath}/auth/confirm`;
   return `${origin}${callbackPath}?next=${encodeURIComponent(next)}`;
 }

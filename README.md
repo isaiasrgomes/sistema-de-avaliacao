@@ -30,7 +30,8 @@ Sem isso, o e-mail abre o link mas você volta para o login **sem sessão**:
 1. **Authentication → URL Configuration**
    - **Site URL:** `http://localhost:3000` (ou a porta que você usa, ex.: `http://localhost:3001`).
    - **Redirect URLs:** inclua pelo menos:
-     - `http://localhost:3000/auth/callback`
+     - `http://localhost:3000/auth/confirm`
+     - `http://localhost:3000/auth/callback` (compatibilidade com links antigos)
      - `http://localhost:3000/**` (wildcard facilita troca de porta durante testes).
 
 2. Confirme que o app está rodando **na mesma URL** da Site URL (mesmo host e porta).
@@ -81,7 +82,7 @@ Se no futuro você publicar em um domínio com subpasta (por exemplo, outro host
 
 ### Supabase em produção
 
-Mantenha as políticas RLS ativas; em **Auth → URL Configuration**, inclua a URL de produção e o callback `https://SEU_DOMINIO/auth/callback`.
+Mantenha as políticas RLS ativas; em **Auth → URL Configuration**, inclua a URL de produção e os callbacks `https://SEU_DOMINIO/auth/confirm` e `https://SEU_DOMINIO/auth/callback` (legado).
 
 ### CI
 
