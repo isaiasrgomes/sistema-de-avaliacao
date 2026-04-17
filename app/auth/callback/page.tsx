@@ -59,7 +59,7 @@ function AuthCallbackInner() {
       } = await supabase.auth.getUser();
 
       if (userErr || !user) {
-        setMessage("Sessão não foi criada. Verifique as URLs de redirecionamento no Supabase (localhost).");
+        setMessage("Sessão não foi criada. Verifique as URLs de redirecionamento e domínio do callback no Supabase.");
         router.replace(
           `/login?error=${encodeURIComponent("Link inválido ou expirado. Peça um novo magic link ou use senha.")}`
         );

@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { SertaoMakerBrand } from "@/components/brand-logo";
 import { toast } from "sonner";
 import { destinoAposLogin } from "@/lib/auth/destino-pos-login";
+import { buildAuthCallbackUrl } from "@/lib/auth/auth-redirect-url";
 
 export function CadastroAvaliadorForm() {
   const [nome, setNome] = useState("");
@@ -35,12 +36,12 @@ export function CadastroAvaliadorForm() {
     }
     setLoading(true);
     const supabase = createClient();
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const callbackUrl = buildAuthCallbackUrl("/aguardando-aprovacao");
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password: senha,
       options: {
-        emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/aguardando-aprovacao")}`,
+        emailRedirectTo: callbackUrl || undefined,
         data: { nome: nome.trim() },
       },
     });

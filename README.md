@@ -19,6 +19,9 @@ Sistema web para importação de inscrições (CSV), triagem, atribuição de av
    - `003_recursos_nota.sql`
 3. (Opcional, ambiente de teste) Rode `sql/seed/seed_demo.sql` para popular dados de demonstração.
 4. Copie `.env.example` para `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+5. Em produção, defina `NEXT_PUBLIC_SITE_URL` com a URL pública do app (ex.: `https://seu-dominio.com`) para os e-mails de magic link/callback não usarem `localhost`.
+   - Em desenvolvimento, o sistema usa automaticamente a origem atual (`localhost`) para evitar erro de PKCE por troca de domínio no callback.
+6. (Opcional) Defina `NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES` para expirar sessão por inatividade (padrão: `30` minutos).
 
 ### Magic link em localhost (obrigatório no painel Supabase)
 

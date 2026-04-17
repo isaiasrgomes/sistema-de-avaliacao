@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { SertaoMakerBrand } from "@/components/brand-logo";
 import { toast } from "sonner";
 import { destinoAposLogin } from "@/lib/auth/destino-pos-login";
+import { buildAuthCallbackUrl } from "@/lib/auth/auth-redirect-url";
 
 export function LoginForm() {
   const search = useSearchParams();
@@ -32,10 +33,11 @@ export function LoginForm() {
   async function magicLink() {
     setLoading(true);
     const supabase = createClient();
+    const callbackUrl = buildAuthCallbackUrl(next);
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        emailRedirectTo: callbackUrl || undefined,
       },
     });
     setLoading(false);
