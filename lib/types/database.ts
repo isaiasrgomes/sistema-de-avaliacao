@@ -22,6 +22,7 @@ export interface Profile {
   nome: string;
   email: string | null;
   cadastro_aprovado: boolean;
+  cadastro_recusado: boolean;
   criado_em: string;
 }
 

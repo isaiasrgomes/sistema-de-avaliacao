@@ -23,13 +23,21 @@ export async function contarCargaAvaliador(supabase: SupabaseClient, avaliadorId
   return count ?? 0;
 }
 
+export async function getAvaliadoresPorProjetoConfig(supabase: SupabaseClient): Promise<number> {
+  const { data: cfg } = await supabase.from("app_config").select("avaliadores_por_projeto").eq("id", 1).maybeSingle();
+  const n = cfg?.avaliadores_por_projeto ?? 2;
+  return Math.min(15, Math.max(1, n));
+}
+
 /**
- * Distribui 2 avaliadores por projeto: menor carga primeiro, sem impedimento.
+ * Distribui N avaliadores por projeto (N em `app_config.avaliadores_por_projeto`): menor carga primeiro, sem impedimento.
  */
 export async function gerarAtribuicoesAutomaticas(
   supabase: SupabaseClient,
   projetoIds: string[]
 ) {
+  const qtd = await getAvaliadoresPorProjetoConfig(supabase);
+
   const { data: avaliadores } = await supabase
     .from("avaliadores")
     .select("id")
@@ -55,10 +63,10 @@ export async function gerarAtribuicoesAutomaticas(
       scored.push({ id: aid, carga });
     }
     scored.sort((x, y) => x.carga - y.carga);
-    const pick = scored.slice(0, 2);
-    if (pick.length < 2) continue;
+    const pick = scored.slice(0, qtd);
+    if (pick.length < qtd) continue;
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < qtd; i++) {
       const { error } = await supabase.from("atribuicoes").insert({
         avaliador_id: pick[i].id,
         projeto_id: projetoId,

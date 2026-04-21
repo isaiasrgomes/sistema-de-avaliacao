@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Upload, Users, Link2, LineChart, Trophy, FileText, Scale, LogOut } from "lucide-react";
+import { LayoutDashboard, Upload, Users, Link2, LineChart, Trophy, FileText, Scale, LogOut, CalendarRange } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SertaoMakerBrand } from "@/components/brand-logo";
 import { toast } from "sonner";
@@ -13,8 +13,9 @@ const items = [
   { href: "/admin/projetos", label: "Projetos", icon: LineChart },
   { href: "/admin/importar", label: "Inscrições", icon: Upload },
   { href: "/admin/avaliadores", label: "Avaliadores", icon: Users },
+  { href: "/admin/programa", label: "Programa", icon: CalendarRange },
   { href: "/admin/atribuicoes", label: "Atribuições", icon: Link2 },
-  { href: "/admin/ranking", label: "Ranking / Resultado", icon: Trophy },
+  { href: "/admin/ranking", label: "Ranking", icon: Trophy },
   { href: "/admin/recursos", label: "Recursos", icon: Scale },
   { href: "/admin/relatorios", label: "Relatórios", icon: FileText },
 ];

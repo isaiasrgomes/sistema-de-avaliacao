@@ -57,10 +57,10 @@ export function LoginForm() {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, cadastro_aprovado")
+      .select("role, cadastro_aprovado, cadastro_recusado")
       .eq("id", data.user.id)
       .single();
-    window.location.href = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, next);
+    window.location.href = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, next, profile?.cadastro_recusado);
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -104,10 +104,6 @@ export function LoginForm() {
                 <p className="text-center text-sm text-muted-foreground">
                   <Link href="/cadastro" className="underline">
                     Criar conta (avaliador)
-                  </Link>
-                  {" · "}
-                  <Link href="/resultado" className="underline">
-                    Resultado público
                   </Link>
                 </p>
               </form>

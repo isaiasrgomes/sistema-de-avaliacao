@@ -4,8 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import SVGtoPDF from "svg-to-pdfkit";
 
-const logosStackedPath = path.join(process.cwd(), "public", "logos-em-cima.svg");
-const logosStackedSvg = fs.existsSync(logosStackedPath) ? fs.readFileSync(logosStackedPath, "utf-8") : null;
+const logoHeaderPath = path.join(process.cwd(), "public", "logo-sertao-inovador.svg");
+const logoHeaderSvg = fs.existsSync(logoHeaderPath) ? fs.readFileSync(logoHeaderPath, "utf-8") : null;
 
 function docHeader(doc: InstanceType<typeof PDFDocument>, titulo: string) {
   const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -17,13 +17,13 @@ function docHeader(doc: InstanceType<typeof PDFDocument>, titulo: string) {
   doc.restore();
 
   const logoStripX = left + 14;
-  const logoStripY = top + 8;
-  const logoStripW = 92;
+  const logoStripY = top + 12;
+  const logoStripW = 150;
 
-  if (logosStackedSvg) {
-    SVGtoPDF(doc, logosStackedSvg, logoStripX, logoStripY, {
+  if (logoHeaderSvg) {
+    SVGtoPDF(doc, logoHeaderSvg, logoStripX, logoStripY, {
       width: logoStripW,
-      height: 54,
+      height: 30,
       preserveAspectRatio: "xMidYMid meet",
     });
   }

@@ -1,4 +1,5 @@
 import { createServerSupabase } from "@/lib/supabase/server";
+import { podeEnviarAvaliacaoAgora } from "@/lib/prazo-avaliacoes";
 import { AvaliacaoForm } from "./avaliacao-form";
 
 export default async function AvaliadorProjetoPage({
@@ -19,6 +20,13 @@ export default async function AvaliadorProjetoPage({
     ? await supabase.from("avaliacoes").select("*").eq("atribuicao_id", atribId).maybeSingle()
     : { data: null };
 
+  const { data: cfgPrazo } = await supabase
+    .from("app_config")
+    .select("avaliacoes_inicio, avaliacoes_fim, prorrogacao_fim, prorrogacao_utilizada")
+    .eq("id", 1)
+    .maybeSingle();
+  const prazoEnvio = cfgPrazo ? podeEnviarAvaliacaoAgora(cfgPrazo) : { ok: true as const };
+
   if (!projeto) return <p>Projeto não encontrado.</p>;
 
   return (
@@ -38,6 +46,7 @@ export default async function AvaliadorProjetoPage({
         projetoId={projeto.id}
         atribuicaoId={atrib?.id ?? ""}
         readOnly={!!exist || atrib?.status === "CONCLUIDA"}
+        motivoBloqueioPrazo={!prazoEnvio.ok ? prazoEnvio.motivo : undefined}
         initial={exist ?? undefined}
       />
     </div>

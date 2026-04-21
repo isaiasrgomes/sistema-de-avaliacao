@@ -53,10 +53,10 @@ export function CadastroAvaliadorForm() {
     if (data.session && data.user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, cadastro_aprovado")
+        .select("role, cadastro_aprovado, cadastro_recusado")
         .eq("id", data.user.id)
         .single();
-      window.location.href = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, "/avaliador");
+      window.location.href = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, "/avaliador", profile?.cadastro_recusado);
       return;
     }
     toast.success("Conta criada. Verifique o e-mail para confirmar o cadastro, se solicitado.");

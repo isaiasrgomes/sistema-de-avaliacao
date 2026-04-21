@@ -6,7 +6,8 @@ import { cadastrarOuAtualizarProjetoManual } from "@/lib/services/projeto-manual
 import { projetoManualSchema } from "@/lib/validations/projeto-manual";
 import { logAuditoria } from "@/lib/services/audit";
 import { calcularResultados, aplicarCota } from "@/lib/services/ranking";
-import { gerarAtribuicoesAutomaticas } from "@/lib/services/atribuicoes-service";
+import { gerarAtribuicoesAutomaticas, getAvaliadoresPorProjetoConfig, temImpedimento } from "@/lib/services/atribuicoes-service";
+import { enviarLembretesResend, listarAvaliadoresComPendencias } from "@/lib/services/email-reminders";
 import { revalidatePath } from "next/cache";
 
 async function requireCoord() {
@@ -138,27 +139,22 @@ export async function actionAplicarCota() {
   return r;
 }
 
-export async function actionResultadoFinal() {
+export async function actionAtribuicaoManual(projetoId: string, avaliadorIds: string[]) {
   const { supabase, user } = await requireCoord();
-  await supabase
-    .from("app_config")
-    .update({
-      fase_publicacao: "FINAL",
-      resultado_final_liberado: true,
-      atualizado_em: new Date().toISOString(),
-    })
-    .eq("id", 1);
-  await logAuditoria(supabase, {
-    usuario_id: user.id,
-    acao: "RESULTADO_FINAL_LIBERADO",
-    entidade: "app_config",
-  });
-  revalidatePath("/resultado");
-  revalidatePath("/admin/ranking");
-}
-
-export async function actionAtribuicaoManual(projetoId: string, a1: string, a2: string) {
-  const { supabase, user } = await requireCoord();
+  const n = await getAvaliadoresPorProjetoConfig(supabase);
+  const ids = avaliadorIds.map((x) => x.trim()).filter(Boolean);
+  if (ids.length !== n) {
+    throw new Error(`Selecione exatamente ${n} avaliador(es) (configuração atual do programa).`);
+  }
+  const uniq = new Set(ids);
+  if (uniq.size !== ids.length) {
+    throw new Error("Os avaliadores devem ser distintos.");
+  }
+  for (const aid of ids) {
+    if (await temImpedimento(supabase, aid, projetoId)) {
+      throw new Error("Um dos avaliadores possui impedimento declarado neste projeto.");
+    }
+  }
   const { data: concluidas } = await supabase
     .from("atribuicoes")
     .select("id")
@@ -168,17 +164,21 @@ export async function actionAtribuicaoManual(projetoId: string, a1: string, a2: 
     throw new Error("Projeto já possui avaliação concluída. Reatribuição bloqueada.");
   }
   await supabase.from("atribuicoes").delete().eq("projeto_id", projetoId);
-  await supabase.from("atribuicoes").insert([
-    { projeto_id: projetoId, avaliador_id: a1, ordem: 1, status: "PENDENTE" },
-    { projeto_id: projetoId, avaliador_id: a2, ordem: 2, status: "PENDENTE" },
-  ]);
+  const rows = ids.map((avaliador_id, i) => ({
+    projeto_id: projetoId,
+    avaliador_id,
+    ordem: i + 1,
+    status: "PENDENTE" as const,
+  }));
+  const { error: insErr } = await supabase.from("atribuicoes").insert(rows);
+  if (insErr) throw new Error(insErr.message);
   await supabase.from("projetos").update({ status: "EM_AVALIACAO" }).eq("id", projetoId);
   await logAuditoria(supabase, {
     usuario_id: user.id,
     acao: "ATRIBUICAO_MANUAL",
     entidade: "atribuicoes",
     entidade_id: projetoId,
-    detalhes: { a1, a2 },
+    detalhes: { avaliadorIds: ids },
   });
   revalidatePath("/admin/atribuicoes");
 }
@@ -189,12 +189,29 @@ export async function actionAtribuirTerceiro(projetoId: string, avaliadorId: str
   if (p?.status !== "AGUARDANDO_3O_AVALIADOR") {
     throw new Error("Projeto não está em AGUARDANDO_3O_AVALIADOR.");
   }
-  const { data: ex } = await supabase.from("atribuicoes").select("id").eq("projeto_id", projetoId).eq("ordem", 3).maybeSingle();
-  if (ex) throw new Error("3ª atribuição já existe.");
+  if (await temImpedimento(supabase, avaliadorId, projetoId)) {
+    throw new Error("Este avaliador possui impedimento declarado neste projeto.");
+  }
+  const { data: maxRow } = await supabase
+    .from("atribuicoes")
+    .select("ordem")
+    .eq("projeto_id", projetoId)
+    .order("ordem", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextOrdem = (maxRow?.ordem ?? 0) + 1;
+  if (nextOrdem > 20) throw new Error("Limite de ordem de atribuições atingido.");
+  const { data: dup } = await supabase
+    .from("atribuicoes")
+    .select("id")
+    .eq("projeto_id", projetoId)
+    .eq("avaliador_id", avaliadorId)
+    .maybeSingle();
+  if (dup) throw new Error("Este avaliador já está atribuído a este projeto.");
   await supabase.from("atribuicoes").insert({
     projeto_id: projetoId,
     avaliador_id: avaliadorId,
-    ordem: 3,
+    ordem: nextOrdem,
     status: "PENDENTE",
   });
   await supabase.from("projetos").update({ status: "EM_AVALIACAO" }).eq("id", projetoId);
@@ -203,9 +220,123 @@ export async function actionAtribuirTerceiro(projetoId: string, avaliadorId: str
     acao: "ATRIBUICAO_TERCEIRO",
     entidade: "atribuicoes",
     entidade_id: projetoId,
-    detalhes: { avaliadorId },
+    detalhes: { avaliadorId, ordem: nextOrdem },
   });
   revalidatePath("/admin/atribuicoes");
+}
+
+/** Troca o avaliador em uma atribuição ainda não concluída (sem avaliação enviada). */
+export async function actionSubstituirAvaliador(atribuicaoId: string, novoAvaliadorId: string) {
+  const { supabase, user } = await requireCoord();
+  const { data: att, error: aErr } = await supabase
+    .from("atribuicoes")
+    .select("id, projeto_id, avaliador_id, status")
+    .eq("id", atribuicaoId)
+    .single();
+  if (aErr || !att) throw new Error("Atribuição não encontrada.");
+  if (att.status === "CONCLUIDA") {
+    throw new Error("Esta atribuição já foi concluída; não é possível substituir o avaliador.");
+  }
+  const { data: avEx } = await supabase.from("avaliacoes").select("id").eq("atribuicao_id", atribuicaoId).maybeSingle();
+  if (avEx) throw new Error("Já existe avaliação enviada para esta atribuição.");
+  if (novoAvaliadorId === att.avaliador_id) throw new Error("Selecione outro avaliador.");
+  if (await temImpedimento(supabase, novoAvaliadorId, att.projeto_id)) {
+    throw new Error("O novo avaliador possui impedimento declarado neste projeto.");
+  }
+  const { data: dup } = await supabase
+    .from("atribuicoes")
+    .select("id")
+    .eq("projeto_id", att.projeto_id)
+    .eq("avaliador_id", novoAvaliadorId)
+    .neq("id", atribuicaoId)
+    .maybeSingle();
+  if (dup) throw new Error("Este avaliador já está atribuído a este projeto.");
+  const { error: u } = await supabase.from("atribuicoes").update({ avaliador_id: novoAvaliadorId }).eq("id", atribuicaoId);
+  if (u) throw new Error(u.message);
+  await logAuditoria(supabase, {
+    usuario_id: user.id,
+    acao: "SUBSTITUIR_AVALIADOR",
+    entidade: "atribuicoes",
+    entidade_id: atribuicaoId,
+    detalhes: { projeto_id: att.projeto_id, novoAvaliadorId },
+  });
+  revalidatePath("/admin/atribuicoes");
+}
+
+export async function actionSalvarPrograma(input: {
+  programa_nome: string | null;
+  avaliacoes_inicio: string | null;
+  avaliacoes_fim: string | null;
+  avaliadores_por_projeto: number;
+}) {
+  const { supabase, user } = await requireCoord();
+  const n = Math.min(15, Math.max(1, Math.floor(Number(input.avaliadores_por_projeto) || 2)));
+  await supabase
+    .from("app_config")
+    .update({
+      programa_nome: input.programa_nome?.trim() || null,
+      avaliacoes_inicio: input.avaliacoes_inicio || null,
+      avaliacoes_fim: input.avaliacoes_fim || null,
+      avaliadores_por_projeto: n,
+      atualizado_em: new Date().toISOString(),
+    })
+    .eq("id", 1);
+  await logAuditoria(supabase, {
+    usuario_id: user.id,
+    acao: "CONFIG_PROGRAMA",
+    entidade: "app_config",
+    detalhes: { avaliadores_por_projeto: n },
+  });
+  revalidatePath("/admin/programa");
+  revalidatePath("/admin/atribuicoes");
+}
+
+/** Prorroga o fim uma única vez; após isso `prorrogacao_utilizada` fica true. */
+export async function actionProrrogarPrazo(novaDataFimISO: string) {
+  const { supabase, user } = await requireCoord();
+  const { data: cfg } = await supabase
+    .from("app_config")
+    .select("prorrogacao_utilizada, avaliacoes_fim")
+    .eq("id", 1)
+    .single();
+  if (cfg?.prorrogacao_utilizada) {
+    throw new Error("A prorrogação já foi utilizada. Não é possível alterar novamente.");
+  }
+  const fim = new Date(novaDataFimISO);
+  if (Number.isNaN(fim.getTime())) throw new Error("Data inválida.");
+  await supabase
+    .from("app_config")
+    .update({
+      prorrogacao_fim: fim.toISOString(),
+      prorrogacao_utilizada: true,
+      atualizado_em: new Date().toISOString(),
+    })
+    .eq("id", 1);
+  await logAuditoria(supabase, {
+    usuario_id: user.id,
+    acao: "PRORROGACAO_PRAZO_AVALIACOES",
+    entidade: "app_config",
+    detalhes: { novaDataFim: fim.toISOString() },
+  });
+  revalidatePath("/admin/programa");
+}
+
+export async function actionLembreteAvaliadoresPendentes() {
+  const { supabase, user } = await requireCoord();
+  const { data: cfg } = await supabase.from("app_config").select("programa_nome").eq("id", 1).maybeSingle();
+  const lista = await listarAvaliadoresComPendencias(supabase);
+  if (!lista.length) {
+    return { enviados: 0, aviso: "Nenhum avaliador com avaliações pendentes." };
+  }
+  const r = await enviarLembretesResend(lista, { programaNome: cfg?.programa_nome });
+  await logAuditoria(supabase, {
+    usuario_id: user.id,
+    acao: "LEMBRETE_EMAIL_AVALIADORES",
+    entidade: "atribuicoes",
+    detalhes: { enviados: r.enviados, total: lista.length, erro: r.erro },
+  });
+  revalidatePath("/admin/programa");
+  return { enviados: r.enviados, total: lista.length, erro: r.erro };
 }
 
 export async function actionAtribuicaoAuto(projetoIds: string[]) {

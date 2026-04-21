@@ -9,6 +9,7 @@ import {
   actionAprovarCadastroAvaliador,
   actionCreateAvaliador,
   actionDeleteAvaliador,
+  actionRejeitarCadastroAvaliador,
   actionToggleAvaliador,
   actionUpdateAvaliador,
 } from "@/app/actions/avaliadores-crud";
@@ -32,7 +33,7 @@ export function AvaliadoresClient({ initial, cadastrosPendentes }: { initial: Ro
             <p className="font-medium text-foreground">Cadastros aguardando aprovação</p>
             <p className="text-xs text-muted-foreground">
               Ao aprovar, o avaliador poderá entrar na área restrita e será criada ou atualizada a linha correspondente
-              nesta lista.
+              nesta lista. Se não aceitar o cadastro, a pessoa verá um aviso ao entrar e não terá acesso à avaliação.
             </p>
           </div>
           <Table>
@@ -51,20 +52,45 @@ export function AvaliadoresClient({ initial, cadastrosPendentes }: { initial: Ro
                   <TableCell>{p.email ?? "—"}</TableCell>
                   <TableCell>{new Date(p.criado_em).toLocaleString("pt-BR")}</TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          await actionAprovarCadastroAvaliador(p.id);
-                          toast.success("Cadastro aprovado.");
-                          window.location.reload();
-                        } catch (e: unknown) {
-                          toast.error(e instanceof Error ? e.message : "Erro");
-                        }
-                      }}
-                    >
-                      Aprovar
-                    </Button>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            await actionAprovarCadastroAvaliador(p.id);
+                            toast.success("Cadastro aprovado.");
+                            window.location.reload();
+                          } catch (e: unknown) {
+                            toast.error(e instanceof Error ? e.message : "Erro");
+                          }
+                        }}
+                      >
+                        Aprovar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={async () => {
+                          if (
+                            !window.confirm(
+                              "Não aceitar este cadastro? A pessoa não poderá acessar a área do avaliador neste edital."
+                            )
+                          ) {
+                            return;
+                          }
+                          try {
+                            await actionRejeitarCadastroAvaliador(p.id);
+                            toast.success("Cadastro não aceito.");
+                            window.location.reload();
+                          } catch (e: unknown) {
+                            toast.error(e instanceof Error ? e.message : "Erro");
+                          }
+                        }}
+                      >
+                        Não aceitar
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

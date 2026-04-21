@@ -4,22 +4,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { actionAplicarCota, actionGerarRanking, actionResultadoFinal, actionSalvarVagas } from "@/app/actions/admin";
+import { actionAplicarCota, actionGerarRanking, actionSalvarVagas } from "@/app/actions/admin";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
-export function RankingClient({
-  totalVagasInicial,
-  fase,
-  liberado,
-}: {
-  totalVagasInicial: number;
-  fase: string;
-  liberado: boolean;
-}) {
+export function RankingClient({ totalVagasInicial }: { totalVagasInicial: number }) {
   const [vagas, setVagas] = useState(String(totalVagasInicial));
-  const [loadingKey, setLoadingKey] = useState<"vagas" | "ranking" | "cota" | "final" | null>(null);
+  const [loadingKey, setLoadingKey] = useState<"vagas" | "ranking" | "cota" | null>(null);
 
   return (
     <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
@@ -80,27 +71,6 @@ export function RankingClient({
         {loadingKey === "cota" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {loadingKey === "cota" ? "Processando..." : "Aplicar cota Sertão"}
       </Button>
-      <Button
-        variant="default"
-        disabled={loadingKey !== null}
-        onClick={async () => {
-          try {
-            setLoadingKey("final");
-            await actionResultadoFinal();
-            toast.success("Resultado final liberado para página pública");
-            window.location.reload();
-          } finally {
-            setLoadingKey(null);
-          }
-        }}
-      >
-        {loadingKey === "final" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {loadingKey === "final" ? "Processando..." : "Gerar resultado final (público)"}
-      </Button>
-      <div className="flex items-center gap-2">
-        <Badge variant="outline">Fase: {fase}</Badge>
-        {liberado && <Badge>Resultado público ativo</Badge>}
-      </div>
     </div>
   );
 }

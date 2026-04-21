@@ -38,7 +38,28 @@ export async function middleware(request: NextRequest) {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, cadastro_aprovado")
+      .select("role, cadastro_aprovado, cadastro_recusado")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role === "COORDENADOR") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    if (profile?.cadastro_recusado === true) {
+      return NextResponse.redirect(new URL("/cadastro-recusado", request.url));
+    }
+    if (profile?.cadastro_aprovado === true) {
+      return NextResponse.redirect(new URL("/avaliador", request.url));
+    }
+    return NextResponse.redirect(new URL("/aguardando-aprovacao", request.url));
+  }
+
+  if (path === "/cadastro-recusado" || path.startsWith("/cadastro-recusado/")) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, cadastro_aprovado, cadastro_recusado")
       .eq("id", user.id)
       .single();
     if (profile?.role === "COORDENADOR") {
@@ -47,7 +68,10 @@ export async function middleware(request: NextRequest) {
     if (profile?.cadastro_aprovado === true) {
       return NextResponse.redirect(new URL("/avaliador", request.url));
     }
-    return NextResponse.redirect(new URL("/aguardando-aprovacao", request.url));
+    if (profile?.cadastro_recusado !== true) {
+      return NextResponse.redirect(new URL("/aguardando-aprovacao", request.url));
+    }
+    return response;
   }
 
   if (path === "/aguardando-aprovacao" || path.startsWith("/aguardando-aprovacao/")) {
@@ -56,11 +80,14 @@ export async function middleware(request: NextRequest) {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, cadastro_aprovado")
+      .select("role, cadastro_aprovado, cadastro_recusado")
       .eq("id", user.id)
       .single();
     if (profile?.role === "COORDENADOR") {
       return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    if (profile?.cadastro_recusado === true) {
+      return NextResponse.redirect(new URL("/cadastro-recusado", request.url));
     }
     if (profile?.cadastro_aprovado === true) {
       return NextResponse.redirect(new URL("/avaliador", request.url));
@@ -88,11 +115,14 @@ export async function middleware(request: NextRequest) {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, cadastro_aprovado")
+      .select("role, cadastro_aprovado, cadastro_recusado")
       .eq("id", user.id)
       .single();
     if (profile?.role === "COORDENADOR") {
       return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    if (profile?.cadastro_recusado === true) {
+      return NextResponse.redirect(new URL("/cadastro-recusado", request.url));
     }
     if (profile?.cadastro_aprovado !== true) {
       return NextResponse.redirect(new URL("/aguardando-aprovacao", request.url));
@@ -108,6 +138,8 @@ export const config = {
     "/avaliador/:path*",
     "/cadastro",
     "/cadastro/:path*",
+    "/cadastro-recusado",
+    "/cadastro-recusado/:path*",
     "/aguardando-aprovacao",
     "/aguardando-aprovacao/:path*",
   ],

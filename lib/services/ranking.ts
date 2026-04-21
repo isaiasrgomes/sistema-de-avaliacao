@@ -50,9 +50,9 @@ export async function montarLinhasRanking(supabase: SupabaseClient): Promise<Lin
       );
 
     const n = avs?.length ?? 0;
-    if (n < 2) continue;
+    if (n < 1) continue;
 
-    if (n === 2 && p.status === "AGUARDANDO_3O_AVALIADOR") continue;
+    if (p.status === "AGUARDANDO_3O_AVALIADOR") continue;
 
     const notasEq = avs!.map((x) => x.nota_equipe);
     const notasMc = avs!.map((x) => x.nota_mercado);

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,9 +26,13 @@ export default async function AguardandoAprovacaoPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("nome, email, cadastro_aprovado, role")
+    .select("nome, email, cadastro_aprovado, cadastro_recusado, role")
     .eq("id", user.id)
     .single();
+
+  if (profile?.cadastro_recusado === true) {
+    redirect("/cadastro-recusado");
+  }
 
   if (profile?.role === "COORDENADOR" || profile?.cadastro_aprovado === true) {
     return (

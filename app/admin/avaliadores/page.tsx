@@ -10,6 +10,7 @@ export default async function AvaliadoresPage() {
     .select("id, nome, email, criado_em")
     .eq("role", "AVALIADOR")
     .eq("cadastro_aprovado", false)
+    .eq("cadastro_recusado", false)
     .order("criado_em", { ascending: false });
 
   const comCarga = await Promise.all(

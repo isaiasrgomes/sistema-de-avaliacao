@@ -13,10 +13,10 @@ export default async function RankingPage() {
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Ranking e resultado</h1>
-        <p className="text-sm text-muted-foreground">Gere ranking numerico, aplique cota do Sertao e libere o resultado final.</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Ranking</h1>
+        <p className="text-sm text-muted-foreground">Gere o ranking numérico, defina vagas e aplique a cota do Sertão.</p>
       </div>
-      <RankingClient totalVagasInicial={cfg?.total_vagas ?? 25} fase={cfg?.fase_publicacao ?? "PRELIMINAR"} liberado={cfg?.resultado_final_liberado ?? false} />
+      <RankingClient totalVagasInicial={cfg?.total_vagas ?? 25} />
       <div className="rounded-xl border border-border/70 bg-card/85 shadow-sm">
         <Table>
           <TableHeader>

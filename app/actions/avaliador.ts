@@ -2,6 +2,7 @@
 
 import { createServerSupabase } from "@/lib/supabase/server";
 import { logAuditoria } from "@/lib/services/audit";
+import { podeEnviarAvaliacaoAgora } from "@/lib/prazo-avaliacoes";
 import { verificarNecessidadeTerceiroAvaliador } from "@/lib/services/cv-service";
 import { revalidatePath } from "next/cache";
 
@@ -13,10 +14,13 @@ async function requireAvaliador() {
   if (!user) throw new Error("Não autenticado");
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, cadastro_aprovado")
+    .select("role, cadastro_aprovado, cadastro_recusado")
     .eq("id", user.id)
     .single();
   if (profile?.role === "COORDENADOR") throw new Error("Use o painel admin");
+  if (profile?.cadastro_recusado === true) {
+    throw new Error("Seu cadastro como avaliador não foi aceito. Entre em contato com a coordenação.");
+  }
   if (profile?.cadastro_aprovado !== true) throw new Error("Seu cadastro ainda não foi aprovado por um coordenador.");
   const email = (user.email ?? "").trim().toLowerCase();
   const { data: av } = await supabase.from("avaliadores").select("id").ilike("email", email).maybeSingle();
@@ -35,6 +39,16 @@ export async function actionEnviarAvaliacao(input: {
   observacoes_gerais: string;
 }) {
   const { supabase, user } = await requireAvaliador();
+
+  const { data: cfg } = await supabase
+    .from("app_config")
+    .select("avaliacoes_inicio, avaliacoes_fim, prorrogacao_fim, prorrogacao_utilizada")
+    .eq("id", 1)
+    .maybeSingle();
+  if (cfg) {
+    const pr = podeEnviarAvaliacaoAgora(cfg);
+    if (!pr.ok) throw new Error(pr.motivo ?? "Prazo de avaliações indisponível.");
+  }
 
   const { data: exist } = await supabase.from("avaliacoes").select("id").eq("atribuicao_id", input.atribuicaoId).maybeSingle();
   if (exist) throw new Error("Avaliação já enviada.");

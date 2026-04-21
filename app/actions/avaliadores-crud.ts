@@ -65,13 +65,14 @@ export async function actionAprovarCadastroAvaliador(profileId: string) {
 
   const { data: profile, error: pErr } = await supabase
     .from("profiles")
-    .select("id, nome, email, role, cadastro_aprovado")
+    .select("id, nome, email, role, cadastro_aprovado, cadastro_recusado")
     .eq("id", profileId)
     .single();
 
   if (pErr || !profile) throw new Error("Perfil não encontrado.");
   if (profile.role !== "AVALIADOR") throw new Error("Somente cadastros de avaliador são aprovados por aqui.");
   if (profile.cadastro_aprovado) throw new Error("Este cadastro já foi aprovado.");
+  if (profile.cadastro_recusado) throw new Error("Este cadastro foi recusado e não pode ser aprovado.");
 
   const email = (profile.email ?? "").trim().toLowerCase();
   if (!email) throw new Error("Perfil sem e-mail. O avaliador precisa usar o mesmo e-mail do cadastro na plataforma.");
@@ -98,6 +99,35 @@ export async function actionAprovarCadastroAvaliador(profileId: string) {
     entidade: "profiles",
     entidade_id: profileId,
     detalhes: { email },
+  });
+
+  revalidatePath("/admin/avaliadores");
+}
+
+/** Marca o cadastro como não aceito; o usuário deixa de aguardar aprovação e vê aviso ao entrar. */
+export async function actionRejeitarCadastroAvaliador(profileId: string) {
+  const { supabase, user } = await requireCoord();
+
+  const { data: profile, error: pErr } = await supabase
+    .from("profiles")
+    .select("id, nome, email, role, cadastro_aprovado, cadastro_recusado")
+    .eq("id", profileId)
+    .single();
+
+  if (pErr || !profile) throw new Error("Perfil não encontrado.");
+  if (profile.role !== "AVALIADOR") throw new Error("Somente cadastros de avaliador podem ser recusados por aqui.");
+  if (profile.cadastro_aprovado) throw new Error("Este cadastro já foi aprovado.");
+  if (profile.cadastro_recusado) throw new Error("Este cadastro já foi recusado.");
+
+  const { error: u1 } = await supabase.from("profiles").update({ cadastro_recusado: true }).eq("id", profileId);
+  if (u1) throw new Error(u1.message);
+
+  await logAuditoria(supabase, {
+    usuario_id: user.id,
+    acao: "RECUSAR_CADASTRO_AVALIADOR",
+    entidade: "profiles",
+    entidade_id: profileId,
+    detalhes: { email: (profile.email ?? "").trim().toLowerCase() },
   });
 
   revalidatePath("/admin/avaliadores");

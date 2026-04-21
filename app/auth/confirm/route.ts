@@ -54,11 +54,11 @@ export async function GET(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, cadastro_aprovado")
+    .select("role, cadastro_aprovado, cadastro_recusado")
     .eq("id", user.id)
     .single();
 
-  const dest = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, next);
+  const dest = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, next, profile?.cadastro_recusado);
   const redirectUrl = new URL(dest, url.origin);
   const redirectResponse = NextResponse.redirect(redirectUrl, { status: 303 });
   for (const cookie of response.cookies.getAll()) {

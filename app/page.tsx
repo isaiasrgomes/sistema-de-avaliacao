@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SertaoMakerBrand } from "@/components/brand-logo";
-import { ArrowRight, BarChart3, ShieldCheck, Users2 } from "lucide-react";
+import { ArrowRight, ShieldCheck, Users2 } from "lucide-react";
 
 export default function HomePage() {
   const links = [
@@ -17,24 +17,18 @@ export default function HomePage() {
       description: "Acesse projetos atribuídos e envie avaliações com segurança.",
       icon: Users2,
     },
-    {
-      href: "/resultado",
-      title: "Resultado público",
-      description: "Consulte a classificação divulgada no edital atual.",
-      icon: BarChart3,
-    },
   ];
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center gap-8 px-6 py-10">
       <div className="flex flex-col items-center gap-4 text-center">
-        <SertaoMakerBrand layout="sideBySide" variant="full" align="center" className="origin-center scale-110 sm:scale-125" />
+        <SertaoMakerBrand variant="full" align="center" className="origin-center scale-110 sm:scale-125" />
         <p className="max-w-lg text-sm text-muted-foreground">
           Avaliação e ranqueamento de projetos com transparência e rastreabilidade.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="mx-auto grid max-w-3xl gap-4 md:grid-cols-2">
         {links.map(({ href, title, description, icon: Icon }) => (
           <Link key={href} href={href} className="group">
             <Card className="h-full border-border/70 bg-card/85 transition-all duration-200 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:shadow-lg">

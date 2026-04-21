@@ -80,11 +80,14 @@ export function AvaliacaoForm({
   projetoId,
   atribuicaoId,
   readOnly,
+  motivoBloqueioPrazo,
   initial,
 }: {
   projetoId: string;
   atribuicaoId: string;
   readOnly: boolean;
+  /** Fora do período configurado pelo programa. */
+  motivoBloqueioPrazo?: string;
   initial?: Record<string, unknown>;
 }) {
   const form = useForm<AvaliacaoForm>({
@@ -111,6 +114,15 @@ export function AvaliacaoForm({
   const [impTipo, setImpTipo] = useState<"SOCIETARIO" | "PROFISSIONAL" | "PARENTESCO" | "OUTRO">("OUTRO");
 
   if (!atribuicaoId) return <p className="text-destructive">Abra o projeto pela lista (link com atribuição).</p>;
+
+  if (motivoBloqueioPrazo) {
+    return (
+      <div className="space-y-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+        <p className="font-medium text-foreground">Período de avaliações</p>
+        <p className="text-muted-foreground">{motivoBloqueioPrazo}</p>
+      </div>
+    );
+  }
 
   if (readOnly) {
     const itens = Object.entries(initial ?? {}).filter(([k]) =>

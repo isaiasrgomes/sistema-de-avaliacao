@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Projeto, ProjetoFase, ProjetoStatus } from "@/lib/types/database";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +50,16 @@ export function ProjetosClient({ initial }: { initial: Projeto[] }) {
   const [status, setStatus] = useState<ProjetoStatus | "">("");
   const [motivo, setMotivo] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.location.hash?.replace(/^#/, "") ?? "";
+    if (!raw) return;
+    setFocusId(raw);
+    const el = document.getElementById(`projeto-row-${raw}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
 
   const municipiosDisponiveis = useMemo(() => {
     return Array.from(new Set(initial.map((p) => p.municipio).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"));
@@ -125,7 +135,11 @@ export function ProjetosClient({ initial }: { initial: Projeto[] }) {
         </TableHeader>
         <TableBody>
           {filtrados.map((p) => (
-            <TableRow key={p.id}>
+            <TableRow
+              key={p.id}
+              id={`projeto-row-${p.id}`}
+              className={focusId === p.id ? "bg-amber-500/10" : undefined}
+            >
               <TableCell className="font-medium">{p.nome_projeto}</TableCell>
               <TableCell>{p.nome_responsavel}</TableCell>
               <TableCell>{p.municipio}</TableCell>
