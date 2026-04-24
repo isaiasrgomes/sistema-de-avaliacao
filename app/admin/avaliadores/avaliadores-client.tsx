@@ -53,7 +53,14 @@ export function AvaliadoresClient({
       <div className="rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
         <p className="text-sm font-medium text-foreground">Status das integrações</p>
         <div className="mt-2 flex flex-wrap gap-2">
-          <Badge variant={integrations.supabaseAdmin ? "default" : "destructive"}>
+          <Badge
+            variant={integrations.supabaseAdmin ? "default" : "outline"}
+            className={
+              integrations.supabaseAdmin
+                ? undefined
+                : "border-destructive/50 bg-destructive/10 text-destructive"
+            }
+          >
             Supabase Admin: {integrations.supabaseAdmin ? "OK" : "Pendente"}
           </Badge>
           <Badge variant={integrations.resend ? "default" : "secondary"}>
