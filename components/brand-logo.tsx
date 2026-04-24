@@ -17,24 +17,31 @@ export function SertaoMakerBrand({ className, variant = "full", align = "start" 
   return (
     <div
       className={cn(
-        "flex",
-        compact ? "flex-col items-start" : "items-center",
+        "inline-flex items-center",
         align === "center" && "justify-center",
         className
       )}
     >
-      <Image
-        src={src}
-        alt="SerTão Inovador"
-        width={compact ? 200 : 400}
-        height={compact ? 40 : 79}
-        sizes={compact ? "200px" : "(max-width: 768px) 280px, 400px"}
+      <div
         className={cn(
-          "h-auto w-auto object-contain",
-          compact ? "max-w-[200px] sm:max-w-[220px]" : "max-w-[280px] sm:max-w-[340px] md:max-w-[400px]"
+          "rounded-xl border border-border/60 bg-[hsl(var(--logo-surface))] shadow-sm",
+          compact ? "px-2.5 py-1.5" : "px-3 py-2"
         )}
-        priority
-      />
+      >
+        <Image
+          src={src}
+          alt="SerTão Inovador"
+          width={compact ? 200 : 400}
+          height={compact ? 40 : 79}
+          sizes={compact ? "200px" : "(max-width: 768px) 280px, 400px"}
+          className={cn(
+            "h-auto w-auto object-contain",
+            compact ? "max-w-[200px] sm:max-w-[220px]" : "max-w-[280px] sm:max-w-[340px] md:max-w-[400px]"
+          )}
+          unoptimized
+          priority
+        />
+      </div>
     </div>
   );
 }

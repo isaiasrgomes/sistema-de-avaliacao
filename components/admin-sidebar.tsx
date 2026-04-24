@@ -53,9 +53,9 @@ export function AdminSidebar() {
         <Link
           href="/admin"
           prefetch
-          className="block rounded-lg outline-none ring-offset-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex items-center rounded-lg outline-none ring-offset-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <SertaoMakerBrand variant="compact" className="origin-left scale-90" />
+          <SertaoMakerBrand variant="compact" />
         </Link>
         <Button variant="outline" size="icon" onClick={() => setMobileOpen((v) => !v)} aria-label="Abrir menu">
           {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -75,9 +75,9 @@ export function AdminSidebar() {
           <Link
             href="/admin"
             prefetch
-            className="block rounded-lg outline-none ring-offset-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center rounded-lg outline-none ring-offset-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <SertaoMakerBrand variant="compact" className="origin-center scale-95" />
+            <SertaoMakerBrand variant="compact" />
           </Link>
           <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label="Fechar menu">
             <X className="h-4 w-4" />
@@ -118,9 +118,9 @@ export function AdminSidebar() {
           <Link
             href="/admin"
             prefetch
-            className="block rounded-lg outline-none ring-offset-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex w-full items-center justify-center rounded-lg outline-none ring-offset-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <SertaoMakerBrand variant="compact" className="origin-center scale-95" />
+            <SertaoMakerBrand variant="compact" />
           </Link>
           <p className="mt-3 text-xs font-medium text-muted-foreground">Painel de Coordenação</p>
         </div>
