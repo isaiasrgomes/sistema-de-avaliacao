@@ -6,7 +6,7 @@ export function createAdminClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
     throw new Error(
-      "Configuração ausente no servidor: defina NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no .env.local para cadastrar/importar avaliadores com criação de senha."
+      "Configuração ausente no servidor: defina NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY (desenvolvimento: .env.local; produção: variáveis de ambiente do host, ex.: Vercel → Project → Settings → Environment Variables) para cadastrar/importar avaliadores com criação de senha."
     );
   }
   return createClient(url, key, {
