@@ -4,9 +4,18 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });
 
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!url || !anon) {
+    return new NextResponse("Configuração incompleta: defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.", {
+      status: 503,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    anon,
     {
       cookies: {
         get(name: string) {

@@ -23,7 +23,10 @@ export default async function AvaliadorHomePage() {
     .order("data_atribuicao", { ascending: false });
 
   const projetoIds = Array.from(new Set((atribs ?? []).map((a) => a.projeto_id)));
-  const { data: projetos } = await supabase.from("projetos").select("id, nome_projeto, status").in("id", projetoIds);
+  const { data: projetos } =
+    projetoIds.length > 0
+      ? await supabase.from("projetos").select("id, nome_projeto, status").in("id", projetoIds)
+      : { data: [] as { id: string; nome_projeto: string; status: string }[] };
 
   const mapP = new Map(projetos?.map((p) => [p.id, p]));
   const rows = (atribs ?? []).map((a) => {

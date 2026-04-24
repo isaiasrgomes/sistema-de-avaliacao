@@ -176,7 +176,10 @@ export async function gerarParecerProjetoPDFBuffer(
   const { data: res } = await supabase.from("resultados").select("*").eq("projeto_id", projetoId).maybeSingle();
   const { data: atribs } = await supabase.from("atribuicoes").select("id").eq("projeto_id", projetoId);
   const ids = atribs?.map((a) => a.id) ?? [];
-  const { data: avs } = await supabase.from("avaliacoes").select("*").in("atribuicao_id", ids);
+  const { data: avs } =
+    ids.length > 0
+      ? await supabase.from("avaliacoes").select("*").in("atribuicao_id", ids)
+      : { data: [] as Record<string, unknown>[] };
 
   const chunks: Buffer[] = [];
   const doc = new PDFDocument({ margin: 50, bufferPages: true });
