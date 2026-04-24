@@ -89,7 +89,40 @@ export async function actionCreateAvaliador(input: {
   return { ok: true, avisoCredenciais };
 }
 
-type CsvAvaliadorRow = { nome?: string; email?: string; senha?: string };
+type CsvAvaliadorRow = Record<string, string | undefined>;
+
+function normalizarCabecalho(chave: string) {
+  return chave
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function limparCelula(valor: string | undefined) {
+  return (valor ?? "").trim().replace(/^["']|["']$/g, "");
+}
+
+function extrairNomeEmail(row: CsvAvaliadorRow) {
+  let nome = "";
+  let email = "";
+
+  for (const [chave, valor] of Object.entries(row)) {
+    const k = normalizarCabecalho(chave);
+    const v = limparCelula(valor);
+    if (!v) continue;
+
+    if (!nome && (k === "nome" || k === "nomecompleto" || k === "1nomecompleto" || k.includes("nome"))) {
+      nome = v;
+      continue;
+    }
+    if (!email && (k === "email" || k === "2email" || k.includes("email"))) {
+      email = v.toLowerCase();
+    }
+  }
+
+  return { nome, email };
+}
 
 export async function actionImportarAvaliadoresCSV(csvText: string) {
   const { supabase, user } = await requireCoord();
@@ -105,18 +138,12 @@ export async function actionImportarAvaliadoresCSV(csvText: string) {
   const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? ""}/login`;
 
   for (const row of parsed.data) {
-    const nome = (row.nome ?? "").trim();
-    const email = (row.email ?? "").trim().toLowerCase();
+    const { nome, email } = extrairNomeEmail(row);
     if (!nome || !email) {
       erros.push(`Linha inválida (nome/email obrigatórios): ${JSON.stringify(row)}`);
       continue;
     }
-    const senha = (row.senha ?? "").trim() || gerarSenhaAleatoria(10);
-    if (senha.length < 6) {
-      erros.push(`Senha inválida para ${email} (mínimo 6 caracteres).`);
-      continue;
-    }
-    const generatedPassword = !(row.senha ?? "").trim();
+    const senha = gerarSenhaAleatoria(10);
 
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
@@ -156,11 +183,9 @@ export async function actionImportarAvaliadoresCSV(csvText: string) {
       continue;
     }
 
-    if (generatedPassword) {
-      const sent = await enviarCredenciaisAvaliadorResend({ nome, email, senha }, { programaNome: cfg?.programa_nome, loginUrl });
-      if (!sent.ok) {
-        erros.push(`${email}: criado, mas e-mail não enviado (${sent.erro}).`);
-      }
+    const sent = await enviarCredenciaisAvaliadorResend({ nome, email, senha }, { programaNome: cfg?.programa_nome, loginUrl });
+    if (!sent.ok) {
+      erros.push(`${email}: criado, mas e-mail não enviado (${sent.erro}).`);
     }
     inseridos += 1;
   }

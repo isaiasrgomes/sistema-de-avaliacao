@@ -38,7 +38,8 @@ export function AvaliadoresClient({
   const [csvText, setCsvText] = useState("");
 
   function baixarModeloCsv() {
-    const modelo = "nome,email,senha\nNome Exemplo,avaliador@exemplo.com,\nOutro Avaliador,outro@exemplo.com,Senha#123";
+    const modelo =
+      "nome,email\nNome Exemplo,avaliador@exemplo.com\nOutro Avaliador,outro@exemplo.com\n";
     const blob = new Blob([modelo], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -189,8 +190,9 @@ export function AvaliadoresClient({
       </div>
       <div className="space-y-2 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
         <p className="text-sm text-muted-foreground">
-          Importar CSV de avaliadores com cabeçalhos: <code>nome,email,senha</code>. Se a senha vier vazia, o sistema
-          gera uma senha aleatória e envia e-mail com as credenciais.
+          Importar CSV de avaliadores com cabeçalhos contendo <code>nome</code> e <code>email</code> (por exemplo:
+          <code> 1. Nome Completo</code> e <code>2. E-mail</code> do Google Forms). O sistema gera senha aleatória e
+          envia e-mail com as credenciais.
         </p>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={baixarModeloCsv}>
@@ -213,7 +215,7 @@ export function AvaliadoresClient({
           className="min-h-28 w-full rounded-md border border-input bg-background p-2 text-sm"
           value={csvText}
           onChange={(e) => setCsvText(e.target.value)}
-          placeholder={"nome,email,senha\nMaria,maria@email.com,\nJoão,joao@email.com,Senha#123"}
+          placeholder={"nome,email\nMaria,maria@email.com\nJoão,joao@email.com"}
         />
         <div className="flex justify-end">
           <Button

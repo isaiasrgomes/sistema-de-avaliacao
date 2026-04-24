@@ -23,7 +23,7 @@ export default function RootLayout({
       <body className={`${inter.variable} min-h-screen font-sans antialiased`}>
         <ThemeProvider>
           <SessionIdleTimeout />
-          <div className="fixed right-4 top-4 z-[100]">
+          <div className="fixed bottom-4 right-4 z-[100] md:bottom-auto md:top-4">
             <ThemeToggle />
           </div>
           {children}
