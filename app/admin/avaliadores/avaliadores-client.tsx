@@ -9,6 +9,7 @@ import {
   actionAprovarCadastroAvaliador,
   actionCreateAvaliador,
   actionDeleteAvaliador,
+  actionImportarAvaliadoresCSV,
   actionRejeitarCadastroAvaliador,
   actionToggleAvaliador,
   actionUpdateAvaliador,
@@ -19,14 +20,58 @@ import { Badge } from "@/components/ui/badge";
 type Row = Avaliador & { carga: number };
 
 type Pendente = { id: string; nome: string; email: string | null; criado_em: string };
+type Integrations = { supabaseAdmin: boolean; resend: boolean };
 
-export function AvaliadoresClient({ initial, cadastrosPendentes }: { initial: Row[]; cadastrosPendentes: Pendente[] }) {
+export function AvaliadoresClient({
+  initial,
+  cadastrosPendentes,
+  integrations,
+}: {
+  initial: Row[];
+  cadastrosPendentes: Pendente[];
+  integrations: Integrations;
+}) {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const [inst, setInst] = useState("");
+  const [csvText, setCsvText] = useState("");
+
+  function baixarModeloCsv() {
+    const modelo = "nome,email,senha\nNome Exemplo,avaliador@exemplo.com,\nOutro Avaliador,outro@exemplo.com,Senha#123";
+    const blob = new Blob([modelo], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "modelo-avaliadores.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="space-y-6">
+      <div className="rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
+        <p className="text-sm font-medium text-foreground">Status das integrações</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Badge variant={integrations.supabaseAdmin ? "default" : "destructive"}>
+            Supabase Admin: {integrations.supabaseAdmin ? "OK" : "Pendente"}
+          </Badge>
+          <Badge variant={integrations.resend ? "default" : "secondary"}>
+            Resend (e-mail): {integrations.resend ? "OK" : "Não configurado"}
+          </Badge>
+        </div>
+        {!integrations.supabaseAdmin && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Configure <code>NEXT_PUBLIC_SUPABASE_URL</code> e <code>SUPABASE_SERVICE_ROLE_KEY</code> no servidor.
+          </p>
+        )}
+        {!integrations.resend && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Configure <code>RESEND_API_KEY</code> e <code>EMAIL_FROM</code> para envio automático das credenciais.
+          </p>
+        )}
+      </div>
+
       {cadastrosPendentes.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-amber-500/40 bg-amber-500/5 shadow-sm">
           <div className="border-b border-amber-500/20 px-4 py-3">
@@ -100,14 +145,32 @@ export function AvaliadoresClient({ initial, cadastrosPendentes }: { initial: Ro
       )}
 
       <div className="flex flex-wrap gap-2 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
-        <Input placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} className="max-w-xs" />
-        <Input placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} className="max-w-xs" />
-        <Input placeholder="Instituição" value={inst} onChange={(e) => setInst(e.target.value)} className="max-w-xs" />
+        <Input placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} className="w-full sm:max-w-xs" />
+        <Input placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full sm:max-w-xs" />
+        <Input
+          placeholder="Senha (opcional)"
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+          className="w-full sm:max-w-xs"
+          type="password"
+        />
+        <Input
+          placeholder="Instituição"
+          value={inst}
+          onChange={(e) => setInst(e.target.value)}
+          className="w-full sm:max-w-xs"
+        />
         <Button
+          className="w-full sm:w-auto"
           onClick={async () => {
             try {
-              await actionCreateAvaliador({ nome, email, instituicao: inst });
-              toast.success("Avaliador criado");
+              const res = await actionCreateAvaliador({ nome, email, senha, instituicao: inst });
+              if (res?.avisoCredenciais) {
+                console.warn(res.avisoCredenciais);
+                toast.warning(res.avisoCredenciais, { duration: 25000 });
+              } else {
+                toast.success("Avaliador criado");
+              }
               window.location.reload();
             } catch (e: unknown) {
               toast.error(e instanceof Error ? e.message : "Erro");
@@ -116,6 +179,57 @@ export function AvaliadoresClient({ initial, cadastrosPendentes }: { initial: Ro
         >
           Adicionar
         </Button>
+      </div>
+      <div className="space-y-2 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
+        <p className="text-sm text-muted-foreground">
+          Importar CSV de avaliadores com cabeçalhos: <code>nome,email,senha</code>. Se a senha vier vazia, o sistema
+          gera uma senha aleatória e envia e-mail com as credenciais.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={baixarModeloCsv}>
+            Baixar modelo CSV
+          </Button>
+          <Input
+            type="file"
+            accept=".csv,text/csv"
+            className="max-w-sm"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const content = await file.text();
+              setCsvText(content);
+              toast.success(`Arquivo carregado: ${file.name}`);
+            }}
+          />
+        </div>
+        <textarea
+          className="min-h-28 w-full rounded-md border border-input bg-background p-2 text-sm"
+          value={csvText}
+          onChange={(e) => setCsvText(e.target.value)}
+          placeholder={"nome,email,senha\nMaria,maria@email.com,\nJoão,joao@email.com,Senha#123"}
+        />
+        <div className="flex justify-end">
+          <Button
+            variant="secondary"
+            disabled={!csvText.trim()}
+            onClick={async () => {
+              try {
+                const res = await actionImportarAvaliadoresCSV(csvText);
+                if (res.erros.length) {
+                  toast.warning(`Importação concluída com avisos. Inseridos: ${res.inseridos}.`);
+                  console.warn(res.erros);
+                } else {
+                  toast.success(`Importação concluída. Inseridos: ${res.inseridos}.`);
+                }
+                window.location.reload();
+              } catch (e: unknown) {
+                toast.error(e instanceof Error ? e.message : "Erro");
+              }
+            }}
+          >
+            Importar CSV de avaliadores
+          </Button>
+        </div>
       </div>
       <div className="overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm">
       <Table>

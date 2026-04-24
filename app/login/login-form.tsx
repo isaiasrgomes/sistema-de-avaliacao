@@ -63,6 +63,25 @@ export function LoginForm() {
     window.location.href = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, next, profile?.cadastro_recusado);
   }
 
+  async function recuperarSenha() {
+    if (!email.trim()) {
+      toast.error("Informe seu e-mail para recuperar a senha.");
+      return;
+    }
+    setLoading(true);
+    const supabase = createClient();
+    const callbackUrl = buildAuthCallbackUrl("/redefinir-senha");
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: callbackUrl || undefined,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Enviamos um e-mail com o link para redefinir sua senha.");
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await passwordLogin();
@@ -100,6 +119,9 @@ export function LoginForm() {
                 </Button>
                 <Button variant="secondary" className="w-full" type="submit" disabled={loading || !email}>
                   Entrar com senha
+                </Button>
+                <Button variant="ghost" className="w-full" type="button" disabled={loading || !email} onClick={recuperarSenha}>
+                  Esqueci minha senha
                 </Button>
                 <p className="text-center text-sm text-muted-foreground">
                   <Link href="/cadastro" className="underline">

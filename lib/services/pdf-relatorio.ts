@@ -46,19 +46,14 @@ function aplicarRodapeInstitucional(doc: InstanceType<typeof PDFDocument>) {
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i += 1) {
     doc.switchToPage(i);
-    const y = doc.page.height - doc.page.margins.bottom + 8;
-    doc
-      .fontSize(8)
-      .fillColor("#64748B")
-      .text("Sistema de Avaliacao - Secretaria de Ciencia, Tecnologia e Inovacao", doc.page.margins.left, y, {
-        width: doc.page.width - doc.page.margins.left - doc.page.margins.right - 110,
-      });
+    const y = doc.page.height - doc.page.margins.bottom / 2;
     doc
       .fontSize(8)
       .fillColor("#334155")
       .text(`Pagina ${i + 1} de ${range.count}`, doc.page.width - doc.page.margins.right - 100, y, {
         width: 100,
         align: "right",
+        lineBreak: false,
       });
   }
 }

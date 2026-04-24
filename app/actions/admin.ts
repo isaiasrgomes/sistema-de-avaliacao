@@ -21,6 +21,18 @@ async function requireCoord() {
   return { supabase, user };
 }
 
+async function avaliadorJaAvaliouProjeto(supabase: Awaited<ReturnType<typeof createServerSupabase>>, avaliadorId: string, projetoId: string) {
+  const { data: atribs } = await supabase
+    .from("atribuicoes")
+    .select("id")
+    .eq("avaliador_id", avaliadorId)
+    .eq("projeto_id", projetoId);
+  const ids = (atribs ?? []).map((a) => a.id);
+  if (!ids.length) return false;
+  const { data: av } = await supabase.from("avaliacoes").select("id").in("atribuicao_id", ids).limit(1).maybeSingle();
+  return !!av;
+}
+
 export async function actionImportarCSV(formData: FormData) {
   const { supabase, user } = await requireCoord();
   const text = formData.get("csv") as string;
@@ -154,6 +166,9 @@ export async function actionAtribuicaoManual(projetoId: string, avaliadorIds: st
     if (await temImpedimento(supabase, aid, projetoId)) {
       throw new Error("Um dos avaliadores possui impedimento declarado neste projeto.");
     }
+    if (await avaliadorJaAvaliouProjeto(supabase, aid, projetoId)) {
+      throw new Error("Este projeto já foi avaliado por este avaliador. Atribua outro avaliador.");
+    }
   }
   const { data: concluidas } = await supabase
     .from("atribuicoes")
@@ -208,6 +223,9 @@ export async function actionAtribuirTerceiro(projetoId: string, avaliadorId: str
     .eq("avaliador_id", avaliadorId)
     .maybeSingle();
   if (dup) throw new Error("Este avaliador já está atribuído a este projeto.");
+  if (await avaliadorJaAvaliouProjeto(supabase, avaliadorId, projetoId)) {
+    throw new Error("Este projeto já foi avaliado por este avaliador. Atribua outro avaliador.");
+  }
   await supabase.from("atribuicoes").insert({
     projeto_id: projetoId,
     avaliador_id: avaliadorId,
@@ -251,6 +269,9 @@ export async function actionSubstituirAvaliador(atribuicaoId: string, novoAvalia
     .neq("id", atribuicaoId)
     .maybeSingle();
   if (dup) throw new Error("Este avaliador já está atribuído a este projeto.");
+  if (await avaliadorJaAvaliouProjeto(supabase, novoAvaliadorId, att.projeto_id)) {
+    throw new Error("Este projeto já foi avaliado por este avaliador. Atribua outro avaliador.");
+  }
   const { error: u } = await supabase.from("atribuicoes").update({ avaliador_id: novoAvaliadorId }).eq("id", atribuicaoId);
   if (u) throw new Error(u.message);
   await logAuditoria(supabase, {

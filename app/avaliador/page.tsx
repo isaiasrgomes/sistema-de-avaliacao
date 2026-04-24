@@ -1,9 +1,5 @@
 import { createServerSupabase } from "@/lib/supabase/server";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getStatusLabel } from "@/lib/utils/status";
+import { ProjetosAvaliadorClient } from "./projetos-client";
 
 export default async function AvaliadorHomePage() {
   const supabase = await createServerSupabase();
@@ -30,48 +26,27 @@ export default async function AvaliadorHomePage() {
   const { data: projetos } = await supabase.from("projetos").select("id, nome_projeto, status").in("id", projetoIds);
 
   const mapP = new Map(projetos?.map((p) => [p.id, p]));
+  const rows = (atribs ?? []).map((a) => {
+    const p = mapP.get(a.projeto_id);
+    return {
+      id: a.id,
+      status: a.status,
+      projeto_id: a.projeto_id,
+      ordem: a.ordem,
+      nome_projeto: p?.nome_projeto ?? a.projeto_id,
+      projeto_status: p?.status ?? "INSCRITO",
+    };
+  });
 
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Meus projetos</h1>
-        <p className="text-sm text-muted-foreground">Apenas atribuições vinculadas ao seu e-mail.</p>
+        <p className="text-sm text-muted-foreground">
+          Filtre por pendentes, já avaliados ou todos para organizar melhor sua lista.
+        </p>
       </div>
-      <div className="overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Projeto</TableHead>
-            <TableHead>Ordem</TableHead>
-            <TableHead>Status atribuição</TableHead>
-            <TableHead>Projeto (status)</TableHead>
-            <TableHead className="text-right">Ação</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {(atribs ?? []).map((a) => {
-            const p = mapP.get(a.projeto_id);
-            return (
-              <TableRow key={a.id}>
-                <TableCell className="font-medium">{p?.nome_projeto ?? a.projeto_id}</TableCell>
-                <TableCell>{a.ordem}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{getStatusLabel(a.status)}</Badge>
-                </TableCell>
-                <TableCell>{getStatusLabel(p?.status)}</TableCell>
-                <TableCell className="text-right">
-                  <Button asChild size="sm">
-                    <Link prefetch href={`/avaliador/projeto/${a.projeto_id}?atribuicao=${a.id}`}>
-                      Abrir
-                    </Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-      </div>
+      <ProjetosAvaliadorClient rows={rows} />
     </div>
   );
 }

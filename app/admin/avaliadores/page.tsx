@@ -23,6 +23,10 @@ export default async function AvaliadoresPage() {
       return { ...a, carga: count ?? 0 };
     })
   );
+  const integrations = {
+    supabaseAdmin: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+    resend: Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM),
+  };
 
   return (
     <div className="space-y-5">
@@ -33,7 +37,7 @@ export default async function AvaliadoresPage() {
           e-mail do cadastro deve ser o mesmo usado no login. Também é possível cadastrar manualmente (sem conta ainda).
         </p>
       </div>
-      <AvaliadoresClient initial={comCarga} cadastrosPendentes={pendentes ?? []} />
+      <AvaliadoresClient initial={comCarga} cadastrosPendentes={pendentes ?? []} integrations={integrations} />
     </div>
   );
 }

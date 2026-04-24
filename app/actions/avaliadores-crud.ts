@@ -1,8 +1,11 @@
 "use server";
 
 import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { logAuditoria } from "@/lib/services/audit";
+import Papa from "papaparse";
+import { enviarCredenciaisAvaliadorResend, gerarSenhaAleatoria } from "@/lib/services/email-reminders";
 
 async function requireCoord() {
   const supabase = await createServerSupabase();
@@ -18,17 +21,158 @@ async function requireCoord() {
 export async function actionCreateAvaliador(input: {
   nome: string;
   email: string;
+  senha?: string;
   instituicao?: string;
 }) {
-  const { supabase } = await requireCoord();
-  const { error } = await supabase.from("avaliadores").insert({
-    nome: input.nome,
-    email: input.email.trim().toLowerCase(),
-    instituicao: input.instituicao ?? null,
+  const { supabase, user } = await requireCoord();
+  const admin = createAdminClient();
+  const nome = input.nome.trim();
+  const email = input.email.trim().toLowerCase();
+  if (!nome || !email) throw new Error("Informe nome e e-mail.");
+
+  const senha = input.senha?.trim() || gerarSenhaAleatoria(10);
+  const generatedPassword = !input.senha?.trim();
+  if (senha.length < 6) throw new Error("A senha deve ter ao menos 6 caracteres.");
+
+  const { data: created, error: createErr } = await admin.auth.admin.createUser({
+    email,
+    password: senha,
+    email_confirm: true,
+    user_metadata: { nome },
+  });
+  if (createErr) {
+    if (/already|exists|registered|duplicate/i.test(createErr.message)) {
+      throw new Error("Já existe usuário autenticado com este e-mail.");
+    }
+    throw new Error(createErr.message);
+  }
+
+  const authId = created.user?.id;
+  if (!authId) throw new Error("Não foi possível criar usuário de autenticação.");
+
+  const { error: pErr } = await supabase.from("profiles").upsert({
+    id: authId,
+    role: "AVALIADOR",
+    nome,
+    email,
+    cadastro_aprovado: true,
+    cadastro_recusado: false,
+  });
+  if (pErr) throw new Error(pErr.message);
+
+  const { error } = await supabase.from("avaliadores").upsert({
+    nome,
+    email,
+    instituicao: input.instituicao?.trim() || null,
     ativo: true,
   });
   if (error) throw new Error(error.message);
+
+  let avisoCredenciais: string | null = null;
+  if (generatedPassword) {
+    const { data: cfg } = await supabase.from("app_config").select("programa_nome").eq("id", 1).maybeSingle();
+    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? ""}/login`;
+    const sent = await enviarCredenciaisAvaliadorResend({ nome, email, senha }, { programaNome: cfg?.programa_nome, loginUrl });
+    if (!sent.ok) {
+      avisoCredenciais = `Avaliador criado, mas o e-mail de credenciais não foi enviado. Senha temporária: ${senha}. Motivo (Resend): ${sent.erro}`;
+    }
+  }
+
+  await logAuditoria(supabase, {
+    usuario_id: user.id,
+    acao: "CADASTRO_AVALIADOR",
+    entidade: "avaliadores",
+    entidade_id: authId,
+    detalhes: { email, generatedPassword },
+  });
   revalidatePath("/admin/avaliadores");
+  return { ok: true, avisoCredenciais };
+}
+
+type CsvAvaliadorRow = { nome?: string; email?: string; senha?: string };
+
+export async function actionImportarAvaliadoresCSV(csvText: string) {
+  const { supabase, user } = await requireCoord();
+  const admin = createAdminClient();
+  const parsed = Papa.parse<CsvAvaliadorRow>(csvText, { header: true, skipEmptyLines: true, delimiter: "" });
+  if (parsed.errors.length) {
+    throw new Error(parsed.errors.map((e) => e.message).join("; "));
+  }
+
+  let inseridos = 0;
+  const erros: string[] = [];
+  const { data: cfg } = await supabase.from("app_config").select("programa_nome").eq("id", 1).maybeSingle();
+  const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? ""}/login`;
+
+  for (const row of parsed.data) {
+    const nome = (row.nome ?? "").trim();
+    const email = (row.email ?? "").trim().toLowerCase();
+    if (!nome || !email) {
+      erros.push(`Linha inválida (nome/email obrigatórios): ${JSON.stringify(row)}`);
+      continue;
+    }
+    const senha = (row.senha ?? "").trim() || gerarSenhaAleatoria(10);
+    if (senha.length < 6) {
+      erros.push(`Senha inválida para ${email} (mínimo 6 caracteres).`);
+      continue;
+    }
+    const generatedPassword = !(row.senha ?? "").trim();
+
+    const { data: created, error: createErr } = await admin.auth.admin.createUser({
+      email,
+      password: senha,
+      email_confirm: true,
+      user_metadata: { nome },
+    });
+    if (createErr) {
+      erros.push(`${email}: ${createErr.message}`);
+      continue;
+    }
+    const authId = created.user?.id;
+    if (!authId) {
+      erros.push(`${email}: usuário não retornado.`);
+      continue;
+    }
+
+    const { error: pErr } = await supabase.from("profiles").upsert({
+      id: authId,
+      role: "AVALIADOR",
+      nome,
+      email,
+      cadastro_aprovado: true,
+      cadastro_recusado: false,
+    });
+    if (pErr) {
+      erros.push(`${email}: ${pErr.message}`);
+      continue;
+    }
+    const { error: avErr } = await supabase.from("avaliadores").upsert({
+      nome,
+      email,
+      ativo: true,
+    });
+    if (avErr) {
+      erros.push(`${email}: ${avErr.message}`);
+      continue;
+    }
+
+    if (generatedPassword) {
+      const sent = await enviarCredenciaisAvaliadorResend({ nome, email, senha }, { programaNome: cfg?.programa_nome, loginUrl });
+      if (!sent.ok) {
+        erros.push(`${email}: criado, mas e-mail não enviado (${sent.erro}).`);
+      }
+    }
+    inseridos += 1;
+  }
+
+  await logAuditoria(supabase, {
+    usuario_id: user.id,
+    acao: "IMPORTAR_AVALIADORES_CSV",
+    entidade: "avaliadores",
+    detalhes: { inseridos, erros: erros.length },
+  });
+  revalidatePath("/admin/avaliadores");
+  return { inseridos, erros };
 }
 
 export async function actionToggleAvaliador(id: string, ativo: boolean) {

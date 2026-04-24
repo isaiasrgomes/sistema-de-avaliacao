@@ -18,7 +18,10 @@ Sistema web para importação de inscrições (CSV), triagem, atribuição de av
    - `002_rls_delete_atribuicao.sql`
    - `003_recursos_nota.sql`
 3. (Opcional, ambiente de teste) Rode `sql/seed/seed_demo.sql` para popular dados de demonstração.
-4. Copie `.env.example` para `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+4. Copie `.env.example` para `.env.local` e preencha:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (obrigatória para cadastro/importação de avaliadores com criação de senha pelo admin)
 5. Em produção, defina `NEXT_PUBLIC_SITE_URL` com a URL pública do app (ex.: `https://seu-dominio.com`) para os e-mails de magic link/callback não usarem `localhost`.
    - Em desenvolvimento, o sistema usa automaticamente a origem atual (`localhost`) para evitar erro de PKCE por troca de domínio no callback.
 6. (Opcional) Defina `NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES` para expirar sessão por inatividade (padrão: `30` minutos).
@@ -99,6 +102,6 @@ O workflow `.github/workflows/ci.yml` executa `lint` e `build` em cada push/PR p
 
 ## Observações
 
-- O **service role** (`SUPABASE_SERVICE_ROLE_KEY`) está previsto em `lib/supabase/admin.ts` para extensões futuras; o fluxo atual usa a sessão do coordenador com RLS.
+- O **service role** (`SUPABASE_SERVICE_ROLE_KEY`) é usado em `lib/supabase/admin.ts` para criar usuários de autenticação no cadastro/importação de avaliadores.
 - Se o Postgres rejeitar `EXECUTE PROCEDURE` nos triggers, troque para `EXECUTE FUNCTION` (PostgreSQL 14+) nos arquivos de migração.
 - Ajuste a lista em `municipios_sertao` conforme o edital para o cálculo automático de `is_sertao` na importação.
