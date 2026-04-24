@@ -3,6 +3,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type LembreteDestinatario = { email: string; nome: string; pendentes: number };
 export type CredenciaisAcesso = { email: string; nome: string; senha: string };
 
+function getSiteUrl() {
+  return process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") || "";
+}
+
+function buildPublicUrl(pathname: string) {
+  const base = getSiteUrl();
+  const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return base ? `${base}${path}` : "";
+}
+
 function parseResendErrorBody(text: string) {
   const t = text.trim();
   if (!t) return "";
@@ -108,13 +118,22 @@ export async function enviarCredenciaisAvaliadorResend(
     return { ok: false, erro: "Configure RESEND_API_KEY e EMAIL_FROM para enviar credenciais por e-mail." };
   }
 
-  const loginUrl = opts.loginUrl?.trim() || process.env.NEXT_PUBLIC_SITE_URL?.trim() || "";
+  const loginUrl = opts.loginUrl?.trim() || getSiteUrl();
+  const resetPasswordHelpUrl = buildPublicUrl("/login");
+  const logoUrl = buildPublicUrl("/logo-sertao-inovador.svg");
   const assunto = opts.programaNome
     ? `Seu acesso foi criado — ${opts.programaNome}`
     : "Seu acesso foi criado na plataforma";
   const html = `
     <div style="font-family:Inter,Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px">
       <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden">
+        ${
+          logoUrl
+            ? `<div style="padding:18px 22px 0 22px;text-align:center">
+                 <img src="${escapeHtml(logoUrl)}" alt="Incubadora Sertão Maker" style="max-width:190px;width:100%;height:auto" />
+               </div>`
+            : ""
+        }
         <div style="padding:18px 22px;background:linear-gradient(135deg,#14532d,#166534);color:#ffffff">
           <h2 style="margin:0;font-size:20px;line-height:1.2">Cadastro de avaliador aprovado</h2>
           <p style="margin:8px 0 0 0;font-size:13px;opacity:.9">Seja bem-vindo(a) à plataforma de avaliação.</p>
@@ -126,9 +145,18 @@ export async function enviarCredenciaisAvaliadorResend(
             <p style="margin:0 0 8px 0"><strong>E-mail:</strong> ${escapeHtml(destinatario.email)}</p>
             <p style="margin:0"><strong>Senha:</strong> ${escapeHtml(destinatario.senha)}</p>
           </div>
-          ${loginUrl ? `<p><a href="${escapeHtml(loginUrl)}" style="display:inline-block;padding:10px 14px;background:#166534;color:#fff;text-decoration:none;border-radius:8px">Acessar plataforma</a></p>` : ""}
+          ${
+            loginUrl
+              ? `<p><a href="${escapeHtml(loginUrl)}" style="display:inline-block;padding:10px 14px;background:#166534;color:#fff;text-decoration:none;border-radius:8px">Acessar plataforma</a></p>`
+              : ""
+          }
+          ${
+            resetPasswordHelpUrl
+              ? `<p style="margin-top:10px"><a href="${escapeHtml(resetPasswordHelpUrl)}" style="display:inline-block;padding:10px 14px;background:#0f172a;color:#fff;text-decoration:none;border-radius:8px">Atualizar senha</a></p>`
+              : ""
+          }
           <p style="font-size:12px;color:#64748b;margin-top:18px">
-            Recomendamos alterar sua senha no primeiro acesso.
+            Para trocar a senha, abra a tela de login e clique em <strong>Esqueci minha senha</strong>.
           </p>
         </div>
       </div>
