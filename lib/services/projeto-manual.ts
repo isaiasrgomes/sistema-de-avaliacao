@@ -32,6 +32,7 @@ export async function cadastrarOuAtualizarProjetoManual(
   const municipioCanonico = norm(municipioFix.municipio);
   const sertaoSet = new Set(sertaoCatalogo.map((m) => m.toLowerCase()));
   const isSertao = sertaoSet.has(municipioCanonico.toLowerCase());
+  const categoriaSetor = norm(input.categoria_setor) || norm(input.setor_aplicacao_lista) || "Não informado";
 
   const payload = {
     nome_projeto: norm(input.nome_projeto),
@@ -43,7 +44,7 @@ export async function cadastrarOuAtualizarProjetoManual(
     municipio: municipioCanonico,
     uf: norm(input.uf).toUpperCase(),
     fase: input.fase as ProjetoFase,
-    categoria_setor: norm(input.categoria_setor),
+    categoria_setor: categoriaSetor,
     equipe_descricao: norm(input.equipe_descricao),
     equipe_quantidade_membros: input.equipe_quantidade_membros,
     equipe_tempo_dedicacao: norm(input.equipe_tempo_dedicacao),

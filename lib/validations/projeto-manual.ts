@@ -22,7 +22,7 @@ export const projetoManualSchema = z.object({
   municipio: z.string().min(1, "Obrigatório").max(100),
   uf: z.enum(UFS_BRASIL, { message: "UF inválida" }),
   fase: z.enum(["IDEACAO", "VALIDACAO"]),
-  categoria_setor: z.string().min(1, "Obrigatório").max(100),
+  categoria_setor: z.string().max(100).optional(),
   equipe_descricao: z.string().min(1, "Obrigatório"),
   equipe_quantidade_membros: z.coerce.number().int().min(1).max(50),
   equipe_tempo_dedicacao: z.enum(TEMPO_DEDICACAO_OPTIONS, { message: "Selecione uma opção" }),

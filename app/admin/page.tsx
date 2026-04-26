@@ -1,7 +1,9 @@
 import { createServerSupabase } from "@/lib/supabase/server";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardMetricasClient } from "./dashboard-metricas-client";
 import { AlertTriangle, BarChart3, CheckCircle2, Clock3, FileText, UserRoundCheck, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default async function AdminDashboardPage() {
   const supabase = await createServerSupabase();
@@ -68,6 +70,11 @@ export default async function AdminDashboardPage() {
           <div className="rounded-lg bg-primary/10 p-2 text-primary">
             <BarChart3 className="h-5 w-5" />
           </div>
+        </div>
+        <div className="mt-3">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin/manual">Abrir manual da plataforma</Link>
+          </Button>
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

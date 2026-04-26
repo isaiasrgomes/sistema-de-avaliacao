@@ -15,7 +15,6 @@ import {
   Scale,
   LogOut,
   CalendarRange,
-  BookOpen,
   Menu,
   X,
 } from "lucide-react";
@@ -33,7 +32,6 @@ const items = [
   { href: "/admin/ranking", label: "Ranking", icon: Trophy },
   { href: "/admin/recursos", label: "Recursos", icon: Scale },
   { href: "/admin/relatorios", label: "Relatórios", icon: FileText },
-  { href: "/admin/manual", label: "Manual", icon: BookOpen },
 ];
 
 export function AdminSidebar({ displayName }: { displayName?: string }) {
@@ -69,7 +67,7 @@ export function AdminSidebar({ displayName }: { displayName?: string }) {
       )}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-screen w-72 flex-col border-r border-border/70 bg-card/95 backdrop-blur-xl transition-transform md:hidden",
+          "fixed inset-y-0 left-0 z-50 flex h-screen w-72 flex-col overflow-y-auto border-r border-border/70 bg-card/95 backdrop-blur-xl transition-transform md:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -103,7 +101,7 @@ export function AdminSidebar({ displayName }: { displayName?: string }) {
             </Link>
           ))}
         </nav>
-        <div className="border-t border-border/70 p-3">
+        <div className="sticky bottom-0 border-t border-border/70 bg-card/95 p-3">
           <Button
             variant="ghost"
             className="w-full justify-start gap-2 rounded-lg text-foreground/80 hover:bg-destructive/10 hover:text-destructive"
@@ -115,7 +113,7 @@ export function AdminSidebar({ displayName }: { displayName?: string }) {
         </div>
       </aside>
 
-      <aside className="sticky top-0 hidden h-screen w-64 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl md:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 flex-col overflow-y-auto border-r border-border/70 bg-card/85 backdrop-blur-xl md:flex">
         <div className="border-b border-border/70 p-4">
           <Link
             href="/admin"
@@ -143,7 +141,7 @@ export function AdminSidebar({ displayName }: { displayName?: string }) {
             </Link>
           ))}
         </nav>
-        <div className="border-t border-border/70 p-3">
+        <div className="sticky bottom-0 border-t border-border/70 bg-card/85 p-3">
           <Button
             variant="ghost"
             className="w-full justify-start gap-2 rounded-lg text-foreground/80 hover:bg-destructive/10 hover:text-destructive"

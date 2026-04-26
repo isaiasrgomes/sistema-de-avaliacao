@@ -53,7 +53,6 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
       municipio: "",
       uf: "PE",
       fase: "IDEACAO",
-      categoria_setor: "",
       equipe_descricao: "",
       equipe_quantidade_membros: 1,
       equipe_tempo_dedicacao: TEMPO_DEDICACAO_OPTIONS[0],
@@ -190,13 +189,6 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
                 <option value="IDEACAO">Ideação</option>
                 <option value="VALIDACAO">Validação</option>
               </select>
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="categoria_setor">Categoria / setor *</Label>
-              <Input id="categoria_setor" {...form.register("categoria_setor")} />
-              {form.formState.errors.categoria_setor && (
-                <p className="text-xs text-destructive">{form.formState.errors.categoria_setor.message}</p>
-              )}
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="equipe_descricao">Equipe empreendedora: descrição *</Label>
