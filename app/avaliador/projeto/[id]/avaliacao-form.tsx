@@ -112,6 +112,7 @@ export function AvaliacaoForm({
   const router = useRouter();
   const [impOpen, setImpOpen] = useState(false);
   const [impTipo, setImpTipo] = useState<"SOCIETARIO" | "PROFISSIONAL" | "PARENTESCO" | "OUTRO">("OUTRO");
+  const [impJustificativa, setImpJustificativa] = useState("");
 
   if (!atribuicaoId) return <p className="text-destructive">Abra o projeto pela lista (link com atribuição).</p>;
 
@@ -215,12 +216,12 @@ export function AvaliacaoForm({
         <Dialog open={impOpen} onOpenChange={setImpOpen}>
           <DialogTrigger asChild>
             <Button type="button" variant="destructive">
-              Declarar impedimento
+              Não conseguirei avaliar
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Tipo de impedimento</DialogTitle>
+              <DialogTitle>Informar motivo de não avaliação</DialogTitle>
             </DialogHeader>
             <select
               className="flex h-10 w-full rounded-md border px-3 text-sm"
@@ -232,10 +233,25 @@ export function AvaliacaoForm({
               <option value="PARENTESCO">Parentesco</option>
               <option value="OUTRO">Outro</option>
             </select>
+            <div className="space-y-2">
+              <Label>Justificativa (obrigatória)</Label>
+              <Textarea
+                rows={4}
+                value={impJustificativa}
+                onChange={(e) => setImpJustificativa(e.target.value)}
+                placeholder="Explique o motivo pelo qual você não conseguirá avaliar este projeto."
+              />
+              <p className="text-xs text-muted-foreground">Mínimo de 10 caracteres.</p>
+            </div>
             <Button
               onClick={async () => {
-                await actionDeclararImpedimento(projetoId, atribuicaoId, impTipo);
-                toast.success("Impedimento registrado");
+                if (impJustificativa.trim().length < 10) {
+                  toast.error("Informe uma justificativa com pelo menos 10 caracteres.");
+                  return;
+                }
+                await actionDeclararImpedimento(projetoId, atribuicaoId, impTipo, impJustificativa);
+                toast.success("Registro realizado. A coordenação poderá atribuir outro avaliador.");
+                setImpOpen(false);
                 router.push("/avaliador");
                 router.refresh();
               }}

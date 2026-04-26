@@ -16,7 +16,15 @@ type Row = {
   projeto_status: string;
 };
 
-export function ProjetosAvaliadorClient({ rows }: { rows: Row[] }) {
+export function ProjetosAvaliadorClient({
+  rows,
+  prazoBloqueado = false,
+  motivoBloqueioPrazo,
+}: {
+  rows: Row[];
+  prazoBloqueado?: boolean;
+  motivoBloqueioPrazo?: string;
+}) {
   const [filtro, setFiltro] = useState<"TODOS" | "PENDENTES" | "AVALIADOS">("PENDENTES");
 
   const filtrados = useMemo(() => {
@@ -27,6 +35,11 @@ export function ProjetosAvaliadorClient({ rows }: { rows: Row[] }) {
 
   return (
     <>
+      {prazoBloqueado && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-muted-foreground">
+          {motivoBloqueioPrazo ?? "O prazo de avaliações está encerrado no momento."}
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button variant={filtro === "PENDENTES" ? "default" : "outline"} size="sm" onClick={() => setFiltro("PENDENTES")}>
           Pendentes
@@ -59,11 +72,17 @@ export function ProjetosAvaliadorClient({ rows }: { rows: Row[] }) {
                 </TableCell>
                 <TableCell>{getStatusLabel(a.projeto_status)}</TableCell>
                 <TableCell className="text-right">
-                  <Button asChild size="sm">
-                    <Link prefetch href={`/avaliador/projeto/${a.projeto_id}?atribuicao=${a.id}`}>
-                      Abrir
-                    </Link>
-                  </Button>
+                  {prazoBloqueado && a.status !== "CONCLUIDA" ? (
+                    <Button size="sm" variant="outline" disabled>
+                      Prazo encerrado
+                    </Button>
+                  ) : (
+                    <Button asChild size="sm">
+                      <Link prefetch href={`/avaliador/projeto/${a.projeto_id}?atribuicao=${a.id}`}>
+                        Abrir
+                      </Link>
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

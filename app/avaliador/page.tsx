@@ -1,4 +1,5 @@
 import { createServerSupabase } from "@/lib/supabase/server";
+import { podeEnviarAvaliacaoAgora } from "@/lib/prazo-avaliacoes";
 import { ProjetosAvaliadorClient } from "./projetos-client";
 
 export default async function AvaliadorHomePage() {
@@ -40,6 +41,12 @@ export default async function AvaliadorHomePage() {
       projeto_status: p?.status ?? "INSCRITO",
     };
   });
+  const { data: cfgPrazo } = await supabase
+    .from("app_config")
+    .select("avaliacoes_inicio, avaliacoes_fim, prorrogacao_fim, prorrogacao_utilizada")
+    .eq("id", 1)
+    .maybeSingle();
+  const prazoEnvio = cfgPrazo ? podeEnviarAvaliacaoAgora(cfgPrazo) : { ok: true as const };
 
   return (
     <div className="space-y-4">
@@ -49,7 +56,7 @@ export default async function AvaliadorHomePage() {
           Filtre por pendentes, já avaliados ou todos para organizar melhor sua lista.
         </p>
       </div>
-      <ProjetosAvaliadorClient rows={rows} />
+      <ProjetosAvaliadorClient rows={rows} prazoBloqueado={!prazoEnvio.ok} motivoBloqueioPrazo={prazoEnvio.motivo} />
     </div>
   );
 }

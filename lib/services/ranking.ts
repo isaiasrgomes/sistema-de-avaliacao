@@ -20,7 +20,7 @@ function compareDesempate(a: LinhaRanking, b: LinhaRanking): number {
   return new Date(a.projeto.timestamp_submissao).getTime() - new Date(b.projeto.timestamp_submissao).getTime();
 }
 
-/** Projetos elegíveis: não desclassificados, com todas atribuições concluídas e sem pendência de 3º */
+/** Projetos elegíveis: não desclassificados, com ao menos uma avaliação concluída e sem pendência de 3º */
 export async function montarLinhasRanking(supabase: SupabaseClient): Promise<LinhaRanking[]> {
   const { data: projetos, error: e1 } = await supabase
     .from("projetos")
@@ -38,9 +38,6 @@ export async function montarLinhasRanking(supabase: SupabaseClient): Promise<Lin
       .eq("projeto_id", p.id);
 
     if (!atribs?.length) continue;
-    const allDone = atribs.every((x) => x.status === "CONCLUIDA");
-    if (!allDone) continue;
-
     const { data: avs } = await supabase
       .from("avaliacoes")
       .select("*")
@@ -49,16 +46,19 @@ export async function montarLinhasRanking(supabase: SupabaseClient): Promise<Lin
         atribs.map((a) => a.id)
       );
 
-    const n = avs?.length ?? 0;
+    const concluidasIds = atribs.filter((x) => x.status === "CONCLUIDA").map((x) => x.id);
+    const avsConcluidas = (avs ?? []).filter((x) => concluidasIds.includes(x.atribuicao_id));
+
+    const n = avsConcluidas.length;
     if (n < 1) continue;
 
     if (p.status === "AGUARDANDO_3O_AVALIADOR") continue;
 
-    const notasEq = avs!.map((x) => x.nota_equipe);
-    const notasMc = avs!.map((x) => x.nota_mercado);
-    const notasPr = avs!.map((x) => x.nota_produto);
-    const notasTc = avs!.map((x) => x.nota_tecnologia);
-    const totais = avs!.map((x) => Number(x.nota_total_ponderada));
+    const notasEq = avsConcluidas.map((x) => x.nota_equipe);
+    const notasMc = avsConcluidas.map((x) => x.nota_mercado);
+    const notasPr = avsConcluidas.map((x) => x.nota_produto);
+    const notasTc = avsConcluidas.map((x) => x.nota_tecnologia);
+    const totais = avsConcluidas.map((x) => Number(x.nota_total_ponderada));
 
     const media = (arr: number[]) => arr.reduce((s, v) => s + v, 0) / arr.length;
 

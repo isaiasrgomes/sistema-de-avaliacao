@@ -67,6 +67,16 @@ export interface Atribuicao {
   data_conclusao: string | null;
 }
 
+export interface Impedimento {
+  id: string;
+  avaliador_id: string;
+  projeto_id: string;
+  tipo: ImpedimentoTipo;
+  declarado_por: DeclaradoPor;
+  justificativa: string | null;
+  data_declaracao: string;
+}
+
 export interface Avaliacao {
   id: string;
   atribuicao_id: string;

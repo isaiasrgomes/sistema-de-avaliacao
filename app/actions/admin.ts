@@ -7,7 +7,11 @@ import { projetoManualSchema } from "@/lib/validations/projeto-manual";
 import { logAuditoria } from "@/lib/services/audit";
 import { calcularResultados, aplicarCota } from "@/lib/services/ranking";
 import { gerarAtribuicoesAutomaticas, getAvaliadoresPorProjetoConfig, temImpedimento } from "@/lib/services/atribuicoes-service";
-import { enviarLembretesResend, listarAvaliadoresComPendencias } from "@/lib/services/email-reminders";
+import {
+  enviarLembretesResend,
+  enviarNovaAtribuicaoResend,
+  listarAvaliadoresComPendencias,
+} from "@/lib/services/email-reminders";
 import { revalidatePath } from "next/cache";
 
 async function requireCoord() {
@@ -19,6 +23,41 @@ async function requireCoord() {
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (profile?.role !== "COORDENADOR") throw new Error("Acesso negado");
   return { supabase, user };
+}
+
+async function notificarNovasAtribuicoes(
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>,
+  rows: { projeto_id: string; avaliador_id: string; ordem: number; atribuicao_id?: string }[]
+) {
+  if (!rows.length) return;
+  const projetoIds = Array.from(new Set(rows.map((r) => r.projeto_id)));
+  const avaliadorIds = Array.from(new Set(rows.map((r) => r.avaliador_id)));
+  const [{ data: projetos }, { data: avaliadores }, { data: cfg }] = await Promise.all([
+    supabase.from("projetos").select("id, nome_projeto").in("id", projetoIds),
+    supabase.from("avaliadores").select("id, nome, email").in("id", avaliadorIds),
+    supabase.from("app_config").select("programa_nome").eq("id", 1).maybeSingle(),
+  ]);
+  const mapProj = new Map((projetos ?? []).map((p) => [p.id, p.nome_projeto]));
+  const mapAv = new Map((avaliadores ?? []).map((a) => [a.id, a]));
+  const base = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") || "";
+
+  for (const row of rows) {
+    const av = mapAv.get(row.avaliador_id);
+    if (!av?.email) continue;
+    const projetoNome = mapProj.get(row.projeto_id) ?? row.projeto_id;
+    const linkAvaliacao =
+      base && row.atribuicao_id ? `${base}/avaliador/projeto/${row.projeto_id}?atribuicao=${row.atribuicao_id}` : null;
+    await enviarNovaAtribuicaoResend(
+      {
+        email: av.email,
+        nome: av.nome,
+        projetoNome,
+        ordem: row.ordem,
+        linkAvaliacao,
+      },
+      { programaNome: cfg?.programa_nome }
+    );
+  }
 }
 
 async function avaliadorJaAvaliouProjeto(supabase: Awaited<ReturnType<typeof createServerSupabase>>, avaliadorId: string, projetoId: string) {
@@ -185,8 +224,17 @@ export async function actionAtribuicaoManual(projetoId: string, avaliadorIds: st
     ordem: i + 1,
     status: "PENDENTE" as const,
   }));
-  const { error: insErr } = await supabase.from("atribuicoes").insert(rows);
+  const { data: inserted, error: insErr } = await supabase.from("atribuicoes").insert(rows).select("id, projeto_id, avaliador_id, ordem");
   if (insErr) throw new Error(insErr.message);
+  await notificarNovasAtribuicoes(
+    supabase,
+    (inserted ?? []).map((r) => ({
+      projeto_id: r.projeto_id,
+      avaliador_id: r.avaliador_id,
+      ordem: r.ordem,
+      atribuicao_id: r.id,
+    }))
+  );
   await supabase.from("projetos").update({ status: "EM_AVALIACAO" }).eq("id", projetoId);
   await logAuditoria(supabase, {
     usuario_id: user.id,
@@ -201,8 +249,8 @@ export async function actionAtribuicaoManual(projetoId: string, avaliadorIds: st
 export async function actionAtribuirTerceiro(projetoId: string, avaliadorId: string) {
   const { supabase, user } = await requireCoord();
   const { data: p } = await supabase.from("projetos").select("status").eq("id", projetoId).single();
-  if (p?.status !== "AGUARDANDO_3O_AVALIADOR") {
-    throw new Error("Projeto não está em AGUARDANDO_3O_AVALIADOR.");
+  if (!p || ["DESCLASSIFICADO", "SELECIONADO", "SUPLENTE", "NAO_SELECIONADO"].includes(p.status)) {
+    throw new Error("Projeto não elegível para nova atribuição.");
   }
   if (await temImpedimento(supabase, avaliadorId, projetoId)) {
     throw new Error("Este avaliador possui impedimento declarado neste projeto.");
@@ -226,60 +274,32 @@ export async function actionAtribuirTerceiro(projetoId: string, avaliadorId: str
   if (await avaliadorJaAvaliouProjeto(supabase, avaliadorId, projetoId)) {
     throw new Error("Este projeto já foi avaliado por este avaliador. Atribua outro avaliador.");
   }
-  await supabase.from("atribuicoes").insert({
-    projeto_id: projetoId,
-    avaliador_id: avaliadorId,
-    ordem: nextOrdem,
-    status: "PENDENTE",
-  });
+  const { data: inserted, error: insErr } = await supabase
+    .from("atribuicoes")
+    .insert({
+      projeto_id: projetoId,
+      avaliador_id: avaliadorId,
+      ordem: nextOrdem,
+      status: "PENDENTE",
+    })
+    .select("id, projeto_id, avaliador_id, ordem")
+    .single();
+  if (insErr) throw new Error(insErr.message);
+  await notificarNovasAtribuicoes(supabase, [
+    {
+      projeto_id: inserted.projeto_id,
+      avaliador_id: inserted.avaliador_id,
+      ordem: inserted.ordem,
+      atribuicao_id: inserted.id,
+    },
+  ]);
   await supabase.from("projetos").update({ status: "EM_AVALIACAO" }).eq("id", projetoId);
   await logAuditoria(supabase, {
     usuario_id: user.id,
-    acao: "ATRIBUICAO_TERCEIRO",
+    acao: "ATRIBUICAO_ADICIONAL",
     entidade: "atribuicoes",
     entidade_id: projetoId,
     detalhes: { avaliadorId, ordem: nextOrdem },
-  });
-  revalidatePath("/admin/atribuicoes");
-}
-
-/** Troca o avaliador em uma atribuição ainda não concluída (sem avaliação enviada). */
-export async function actionSubstituirAvaliador(atribuicaoId: string, novoAvaliadorId: string) {
-  const { supabase, user } = await requireCoord();
-  const { data: att, error: aErr } = await supabase
-    .from("atribuicoes")
-    .select("id, projeto_id, avaliador_id, status")
-    .eq("id", atribuicaoId)
-    .single();
-  if (aErr || !att) throw new Error("Atribuição não encontrada.");
-  if (att.status === "CONCLUIDA") {
-    throw new Error("Esta atribuição já foi concluída; não é possível substituir o avaliador.");
-  }
-  const { data: avEx } = await supabase.from("avaliacoes").select("id").eq("atribuicao_id", atribuicaoId).maybeSingle();
-  if (avEx) throw new Error("Já existe avaliação enviada para esta atribuição.");
-  if (novoAvaliadorId === att.avaliador_id) throw new Error("Selecione outro avaliador.");
-  if (await temImpedimento(supabase, novoAvaliadorId, att.projeto_id)) {
-    throw new Error("O novo avaliador possui impedimento declarado neste projeto.");
-  }
-  const { data: dup } = await supabase
-    .from("atribuicoes")
-    .select("id")
-    .eq("projeto_id", att.projeto_id)
-    .eq("avaliador_id", novoAvaliadorId)
-    .neq("id", atribuicaoId)
-    .maybeSingle();
-  if (dup) throw new Error("Este avaliador já está atribuído a este projeto.");
-  if (await avaliadorJaAvaliouProjeto(supabase, novoAvaliadorId, att.projeto_id)) {
-    throw new Error("Este projeto já foi avaliado por este avaliador. Atribua outro avaliador.");
-  }
-  const { error: u } = await supabase.from("atribuicoes").update({ avaliador_id: novoAvaliadorId }).eq("id", atribuicaoId);
-  if (u) throw new Error(u.message);
-  await logAuditoria(supabase, {
-    usuario_id: user.id,
-    acao: "SUBSTITUIR_AVALIADOR",
-    entidade: "atribuicoes",
-    entidade_id: atribuicaoId,
-    detalhes: { projeto_id: att.projeto_id, novoAvaliadorId },
   });
   revalidatePath("/admin/atribuicoes");
 }
@@ -363,6 +383,15 @@ export async function actionLembreteAvaliadoresPendentes() {
 export async function actionAtribuicaoAuto(projetoIds: string[]) {
   const { supabase, user } = await requireCoord();
   const r = await gerarAtribuicoesAutomaticas(supabase, projetoIds);
+  await notificarNovasAtribuicoes(
+    supabase,
+    (r.atribuicoesCriadas ?? []).map((x) => ({
+      projeto_id: x.projeto_id,
+      avaliador_id: x.avaliador_id,
+      ordem: x.ordem,
+      atribuicao_id: x.id,
+    }))
+  );
   await logAuditoria(supabase, {
     usuario_id: user.id,
     acao: "ATRIBUICAO_AUTO",

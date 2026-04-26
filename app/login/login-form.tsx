@@ -13,6 +13,7 @@ import { SertaoMakerBrand } from "@/components/brand-logo";
 import { toast } from "sonner";
 import { destinoAposLogin } from "@/lib/auth/destino-pos-login";
 import { buildAuthCallbackUrl } from "@/lib/auth/auth-redirect-url";
+import { actionEnviarRecuperacaoSenha } from "@/app/actions/auth";
 
 export function LoginForm() {
   const search = useSearchParams();
@@ -69,17 +70,15 @@ export function LoginForm() {
       return;
     }
     setLoading(true);
-    const supabase = createClient();
     const callbackUrl = buildAuthCallbackUrl("/redefinir-senha");
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: callbackUrl || undefined,
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await actionEnviarRecuperacaoSenha({ email: email.trim(), callbackUrl });
+      toast.success("Enviamos um e-mail com o link para redefinir sua senha.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Erro ao enviar e-mail de recuperação.");
+    } finally {
+      setLoading(false);
     }
-    toast.success("Enviamos um e-mail com o link para redefinir sua senha.");
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {

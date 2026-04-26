@@ -47,6 +47,7 @@ export async function gerarAtribuicoesAutomaticas(
 
   const idsA = avaliadores.map((a) => a.id);
   let criadas = 0;
+  const atribuicoesCriadas: { id: string; projeto_id: string; avaliador_id: string; ordem: number }[] = [];
 
   for (const projetoId of projetoIds) {
     const { data: exist } = await supabase
@@ -67,17 +68,24 @@ export async function gerarAtribuicoesAutomaticas(
     if (pick.length < qtd) continue;
 
     for (let i = 0; i < qtd; i++) {
-      const { error } = await supabase.from("atribuicoes").insert({
-        avaliador_id: pick[i].id,
-        projeto_id: projetoId,
-        ordem: i + 1,
-        status: "PENDENTE",
-      });
-      if (!error) criadas++;
+      const { data: inserted, error } = await supabase
+        .from("atribuicoes")
+        .insert({
+          avaliador_id: pick[i].id,
+          projeto_id: projetoId,
+          ordem: i + 1,
+          status: "PENDENTE",
+        })
+        .select("id, projeto_id, avaliador_id, ordem")
+        .single();
+      if (!error && inserted) {
+        criadas++;
+        atribuicoesCriadas.push(inserted);
+      }
     }
 
     await supabase.from("projetos").update({ status: "EM_AVALIACAO" }).eq("id", projetoId);
   }
 
-  return { criadas };
+  return { criadas, atribuicoesCriadas };
 }

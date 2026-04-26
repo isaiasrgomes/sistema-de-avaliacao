@@ -86,15 +86,19 @@ export async function actionEnviarAvaliacao(input: {
 export async function actionDeclararImpedimento(
   projetoId: string,
   atribuicaoId: string,
-  tipo: "SOCIETARIO" | "PROFISSIONAL" | "PARENTESCO" | "OUTRO"
+  tipo: "SOCIETARIO" | "PROFISSIONAL" | "PARENTESCO" | "OUTRO",
+  justificativa: string
 ) {
   const { supabase, user, avaliadorId } = await requireAvaliador();
+  const motivo = justificativa.trim();
+  if (motivo.length < 10) throw new Error("Informe uma justificativa com pelo menos 10 caracteres.");
 
   await supabase.from("impedimentos").insert({
     projeto_id: projetoId,
     avaliador_id: avaliadorId,
     tipo,
     declarado_por: "AVALIADOR",
+    justificativa: motivo,
   });
 
   await supabase.from("avaliacoes").delete().eq("atribuicao_id", atribuicaoId);
@@ -107,7 +111,7 @@ export async function actionDeclararImpedimento(
     acao: "IMPEDIMENTO",
     entidade: "impedimentos",
     entidade_id: projetoId,
-    detalhes: { tipo },
+    detalhes: { tipo, justificativa: motivo },
   });
 
   revalidatePath("/avaliador");
