@@ -7,6 +7,7 @@ import { projetoManualSchema } from "@/lib/validations/projeto-manual";
 import { logAuditoria } from "@/lib/services/audit";
 import { calcularResultados, aplicarCota } from "@/lib/services/ranking";
 import { gerarAtribuicoesAutomaticas, getAvaliadoresPorProjetoConfig, temImpedimento } from "@/lib/services/atribuicoes-service";
+import { prazoFimEfetivo } from "@/lib/prazo-avaliacoes";
 import {
   enviarLembretesResend,
   enviarNovaAtribuicaoResend,
@@ -70,6 +71,21 @@ async function avaliadorJaAvaliouProjeto(supabase: Awaited<ReturnType<typeof cre
   if (!ids.length) return false;
   const { data: av } = await supabase.from("avaliacoes").select("id").in("atribuicao_id", ids).limit(1).maybeSingle();
   return !!av;
+}
+
+function throwIfAtribuicaoInsertError(error: { message?: string; code?: string } | null) {
+  if (!error) return;
+  const msg = (error.message ?? "").toLowerCase();
+  const code = error.code ?? "";
+  if (msg.includes("atribuicoes_ordem_check")) {
+    throw new Error(
+      "A base de dados ainda está com limite antigo de ordem de atribuição. Aplique a migration 008_programa_avaliacoes.sql e tente novamente."
+    );
+  }
+  if (code === "23505") {
+    throw new Error("Já existe atribuição para este avaliador/projeto ou para esta ordem no projeto.");
+  }
+  throw new Error(error.message || "Falha ao salvar atribuição.");
 }
 
 export async function actionImportarCSV(formData: FormData) {
@@ -192,6 +208,20 @@ export async function actionAplicarCota() {
 
 export async function actionAtribuicaoManual(projetoId: string, avaliadorIds: string[]) {
   const { supabase, user } = await requireCoord();
+  const { data: cfgPrazo } = await supabase
+    .from("app_config")
+    .select("avaliacoes_fim, prorrogacao_fim")
+    .eq("id", 1)
+    .maybeSingle();
+  const fim = cfgPrazo ? prazoFimEfetivo({
+    avaliacoes_inicio: null,
+    avaliacoes_fim: cfgPrazo.avaliacoes_fim,
+    prorrogacao_fim: cfgPrazo.prorrogacao_fim,
+    prorrogacao_utilizada: !!cfgPrazo.prorrogacao_fim,
+  }) : null;
+  if (fim && new Date() > fim) {
+    throw new Error(`Atribuição indisponível: o prazo de avaliações encerrou em ${fim.toLocaleString("pt-BR")}.`);
+  }
   const n = await getAvaliadoresPorProjetoConfig(supabase);
   const ids = avaliadorIds.map((x) => x.trim()).filter(Boolean);
   if (ids.length !== n) {
@@ -209,14 +239,6 @@ export async function actionAtribuicaoManual(projetoId: string, avaliadorIds: st
       throw new Error("Este projeto já foi avaliado por este avaliador. Atribua outro avaliador.");
     }
   }
-  const { data: concluidas } = await supabase
-    .from("atribuicoes")
-    .select("id")
-    .eq("projeto_id", projetoId)
-    .eq("status", "CONCLUIDA");
-  if (concluidas?.length) {
-    throw new Error("Projeto já possui avaliação concluída. Reatribuição bloqueada.");
-  }
   await supabase.from("atribuicoes").delete().eq("projeto_id", projetoId);
   const rows = ids.map((avaliador_id, i) => ({
     projeto_id: projetoId,
@@ -225,7 +247,7 @@ export async function actionAtribuicaoManual(projetoId: string, avaliadorIds: st
     status: "PENDENTE" as const,
   }));
   const { data: inserted, error: insErr } = await supabase.from("atribuicoes").insert(rows).select("id, projeto_id, avaliador_id, ordem");
-  if (insErr) throw new Error(insErr.message);
+  throwIfAtribuicaoInsertError(insErr);
   await notificarNovasAtribuicoes(
     supabase,
     (inserted ?? []).map((r) => ({
@@ -248,9 +270,23 @@ export async function actionAtribuicaoManual(projetoId: string, avaliadorIds: st
 
 export async function actionAtribuirTerceiro(projetoId: string, avaliadorId: string) {
   const { supabase, user } = await requireCoord();
-  const { data: p } = await supabase.from("projetos").select("status").eq("id", projetoId).single();
-  if (!p || ["DESCLASSIFICADO", "SELECIONADO", "SUPLENTE", "NAO_SELECIONADO"].includes(p.status)) {
-    throw new Error("Projeto não elegível para nova atribuição.");
+  const { data: p } = await supabase.from("projetos").select("id").eq("id", projetoId).maybeSingle();
+  if (!p) {
+    throw new Error("Projeto não encontrado.");
+  }
+  const { data: cfgPrazo } = await supabase
+    .from("app_config")
+    .select("avaliacoes_fim, prorrogacao_fim")
+    .eq("id", 1)
+    .maybeSingle();
+  const fim = cfgPrazo ? prazoFimEfetivo({
+    avaliacoes_inicio: null,
+    avaliacoes_fim: cfgPrazo.avaliacoes_fim,
+    prorrogacao_fim: cfgPrazo.prorrogacao_fim,
+    prorrogacao_utilizada: !!cfgPrazo.prorrogacao_fim,
+  }) : null;
+  if (fim && new Date() > fim) {
+    throw new Error(`Atribuição indisponível: o prazo de avaliações encerrou em ${fim.toLocaleString("pt-BR")}.`);
   }
   if (await temImpedimento(supabase, avaliadorId, projetoId)) {
     throw new Error("Este avaliador possui impedimento declarado neste projeto.");
@@ -263,7 +299,7 @@ export async function actionAtribuirTerceiro(projetoId: string, avaliadorId: str
     .limit(1)
     .maybeSingle();
   const nextOrdem = (maxRow?.ordem ?? 0) + 1;
-  if (nextOrdem > 20) throw new Error("Limite de ordem de atribuições atingido.");
+  if (nextOrdem > 50) throw new Error("Limite de ordem de atribuições atingido.");
   const { data: dup } = await supabase
     .from("atribuicoes")
     .select("id")
@@ -284,7 +320,7 @@ export async function actionAtribuirTerceiro(projetoId: string, avaliadorId: str
     })
     .select("id, projeto_id, avaliador_id, ordem")
     .single();
-  if (insErr) throw new Error(insErr.message);
+  throwIfAtribuicaoInsertError(insErr);
   await notificarNovasAtribuicoes(supabase, [
     {
       projeto_id: inserted.projeto_id,

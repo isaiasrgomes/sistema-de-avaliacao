@@ -15,6 +15,7 @@ import {
   Scale,
   LogOut,
   CalendarRange,
+  BookOpen,
   Menu,
   X,
 } from "lucide-react";
@@ -32,9 +33,10 @@ const items = [
   { href: "/admin/ranking", label: "Ranking", icon: Trophy },
   { href: "/admin/recursos", label: "Recursos", icon: Scale },
   { href: "/admin/relatorios", label: "Relatórios", icon: FileText },
+  { href: "/admin/manual", label: "Manual", icon: BookOpen },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ displayName }: { displayName?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -123,6 +125,7 @@ export function AdminSidebar() {
             <SertaoMakerBrand variant="compact" />
           </Link>
           <p className="mt-3 text-xs font-medium text-muted-foreground">Painel de Coordenação</p>
+          <p className="mt-1 truncate text-xs text-foreground/80">Bem-vindo, {displayName || "Usuário"}</p>
         </div>
         <nav className="flex-1 space-y-1.5 p-3">
           {items.map(({ href, label, icon: Icon }) => (

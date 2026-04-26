@@ -3,6 +3,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enviarRecuperacaoSenhaResend } from "@/lib/services/email-reminders";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 export async function actionEnviarRecuperacaoSenha(input: { email: string; callbackUrl: string }) {
   const email = input.email.trim().toLowerCase();
@@ -21,7 +22,7 @@ export async function actionEnviarRecuperacaoSenha(input: { email: string; callb
     options: { redirectTo: callbackUrl },
   });
   if (error) {
-    throw new Error(error.message);
+    throw new Error(getUserFriendlyErrorMessage(error, "Não foi possível gerar o link de recuperação."));
   }
 
   const actionLink = data?.properties?.action_link;

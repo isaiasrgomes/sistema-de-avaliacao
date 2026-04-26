@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { actionRecalcularRanking, actionRegistrarRecurso } from "@/app/actions/admin";
 import { toast } from "sonner";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 export default function RecursosPage() {
   const supabase = createClient();
@@ -79,7 +80,7 @@ export default function RecursosPage() {
             );
             toast.success("Recurso registrado");
           } catch (e: unknown) {
-            toast.error(e instanceof Error ? e.message : "Erro");
+            toast.error(getUserFriendlyErrorMessage(e, "Não foi possível registrar o recurso."));
           }
         }}
       >

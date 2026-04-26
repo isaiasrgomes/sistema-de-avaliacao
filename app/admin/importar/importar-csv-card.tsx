@@ -38,9 +38,8 @@ export function ImportarCsvCard() {
       <CardHeader>
         <CardTitle>Importar CSV (Google Forms)</CardTitle>
         <CardDescription>
-          Colunas são mapeadas automaticamente. Campos obrigatórios para importar: carimbo de data/hora, nome do proponente,
-          CPF, e-mail, nome do projeto/startup, município e setor de aplicação. Campos opcionais: telefone, CNPJ, fase e link
-          do pitch.
+          Colunas são mapeadas automaticamente. Além dos dados cadastrais do projeto, o CSV precisa conter também os campos das
+          seções de equipe, mercado e tecnologia, incluindo setor de aplicação (lista dropdown).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

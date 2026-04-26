@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { actionDeclararImpedimento, actionEnviarAvaliacao } from "@/app/actions/avaliador";
 import { toast } from "sonner";
 import { Star } from "lucide-react";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 import {
   Dialog,
   DialogContent,
@@ -168,23 +169,44 @@ export function AvaliacaoForm({
           router.push("/avaliador");
           router.refresh();
         } catch (e: unknown) {
-          toast.error(e instanceof Error ? e.message : "Erro");
+          toast.error(getUserFriendlyErrorMessage(e, "Não foi possível enviar a avaliação."));
         }
       })}
     >
       <div className="space-y-4">
         {(
           [
-            { key: "nota_equipe", label: "Equipe" },
-            { key: "nota_mercado", label: "Mercado" },
-            { key: "nota_produto", label: "Produto" },
-            { key: "nota_tecnologia", label: "Tecnologia" },
+            {
+              key: "nota_equipe",
+              label: "Equipe Empreendedora",
+              descricao:
+                "Análise de aspectos como formação técnico-científica dos membros da equipe, experiência profissional, evidências de competência técnica, empreendedora e de gestão para implementar o negócio.",
+            },
+            {
+              key: "nota_mercado",
+              label: "Problema e oportunidade de mercado",
+              descricao:
+                "Análise da relevância do problema/oportunidade de mercado, tamanho e abrangência, levando em conta o potencial de escala e as tendências de mercado.",
+            },
+            {
+              key: "nota_produto",
+              label: "Produto/Solução",
+              descricao:
+                "Análise da viabilidade técnica da solução proposta; alinhamento com o problema de mercado identificado.",
+            },
+            {
+              key: "nota_tecnologia",
+              label: "Tecnologia e diferencial",
+              descricao:
+                "Análise das funcionalidades do produto e do que o diferencia dos existentes; tecnologias envolvidas que tornam a solução com valor agregado e de difícil cópia.",
+            },
           ] as const
-        ).map(({ key, label }) => {
+        ).map(({ key, label, descricao }) => {
           const v = form.watch(key);
           return (
             <div key={key} className="space-y-2">
-              <Label>{`Nota - ${label}`}</Label>
+              <Label>{label}</Label>
+              <p className="text-xs text-muted-foreground">{descricao}</p>
               <StarRating
                 name={label}
                 value={typeof v === "number" ? v : undefined}
@@ -241,12 +263,12 @@ export function AvaliacaoForm({
                 onChange={(e) => setImpJustificativa(e.target.value)}
                 placeholder="Explique o motivo pelo qual você não conseguirá avaliar este projeto."
               />
-              <p className="text-xs text-muted-foreground">Mínimo de 10 caracteres.</p>
+              <p className="text-xs text-muted-foreground">Mínimo de 30 caracteres.</p>
             </div>
             <Button
               onClick={async () => {
-                if (impJustificativa.trim().length < 10) {
-                  toast.error("Informe uma justificativa com pelo menos 10 caracteres.");
+                if (impJustificativa.trim().length < 30) {
+                  toast.error("Informe uma justificativa com pelo menos 30 caracteres.");
                   return;
                 }
                 await actionDeclararImpedimento(projetoId, atribuicaoId, impTipo, impJustificativa);

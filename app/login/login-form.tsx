@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { destinoAposLogin } from "@/lib/auth/destino-pos-login";
 import { buildAuthCallbackUrl } from "@/lib/auth/auth-redirect-url";
 import { actionEnviarRecuperacaoSenha } from "@/app/actions/auth";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 export function LoginForm() {
   const search = useSearchParams();
@@ -25,9 +26,9 @@ export function LoginForm() {
     const err = search.get("error");
     if (!err) return;
     try {
-      toast.error(decodeURIComponent(err));
+      toast.error(getUserFriendlyErrorMessage(decodeURIComponent(err)));
     } catch {
-      toast.error(err);
+      toast.error(getUserFriendlyErrorMessage(err));
     }
   }, [search]);
 
@@ -42,7 +43,7 @@ export function LoginForm() {
       },
     });
     setLoading(false);
-    if (error) toast.error(error.message);
+    if (error) toast.error(getUserFriendlyErrorMessage(error, "Não foi possível enviar o link de acesso."));
     else toast.success("Verifique seu e-mail para o link de acesso.");
   }
 
@@ -53,7 +54,7 @@ export function LoginForm() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(getUserFriendlyErrorMessage(error, "Não foi possível entrar agora. Tente novamente."));
       return;
     }
     const { data: profile } = await supabase
@@ -75,7 +76,7 @@ export function LoginForm() {
       await actionEnviarRecuperacaoSenha({ email: email.trim(), callbackUrl });
       toast.success("Enviamos um e-mail com o link para redefinir sua senha.");
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Erro ao enviar e-mail de recuperação.");
+      toast.error(getUserFriendlyErrorMessage(error, "Não foi possível enviar o e-mail de recuperação."));
     } finally {
       setLoading(false);
     }

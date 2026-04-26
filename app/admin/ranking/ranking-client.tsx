@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { actionAplicarCota, actionGerarRanking, actionSalvarVagas } from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 export function RankingClient({ totalVagasInicial }: { totalVagasInicial: number }) {
   const [vagas, setVagas] = useState(String(totalVagasInicial));
@@ -43,7 +44,7 @@ export function RankingClient({ totalVagasInicial }: { totalVagasInicial: number
             toast.success(`Ranking gerado: ${r.total} projetos`);
             window.location.reload();
           } catch (e: unknown) {
-            toast.error(e instanceof Error ? e.message : "Erro");
+            toast.error(getUserFriendlyErrorMessage(e, "Não foi possível gerar o ranking."));
           } finally {
             setLoadingKey(null);
           }
@@ -62,7 +63,7 @@ export function RankingClient({ totalVagasInicial }: { totalVagasInicial: number
             toast.success(`Cota aplicada — selecionados: ${r.selecionados}`);
             window.location.reload();
           } catch (e: unknown) {
-            toast.error(e instanceof Error ? e.message : "Erro");
+            toast.error(getUserFriendlyErrorMessage(e, "Não foi possível aplicar a cota agora."));
           } finally {
             setLoadingKey(null);
           }

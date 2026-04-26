@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { actionDesclassificar, actionReclassificar } from "@/app/actions/admin";
 import { toast } from "sonner";
+import { ProjetoDetalhesSetores } from "@/components/projeto-detalhes-setores";
 
 function labelStatus(status: ProjetoStatus) {
   switch (status) {
@@ -163,21 +164,16 @@ export function ProjetosClient({ initial }: { initial: Projeto[] }) {
                     <DialogHeader>
                       <DialogTitle>{p.nome_projeto}</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        <strong>Responsável:</strong> {p.nome_responsavel} — {p.email_responsavel}
-                      </p>
-                      <p>
-                        <strong>CPF:</strong> {p.cpf_responsavel}
-                      </p>
-                      <p>
-                        <strong>Vídeo:</strong>{" "}
+                    <div className="space-y-3">
+                      <ProjetoDetalhesSetores projeto={p} />
+                      <p className="text-sm">
+                        <strong>Vídeo pitch:</strong>{" "}
                         {p.url_video_pitch ? (
                           <a href={p.url_video_pitch} className="text-primary underline" target="_blank" rel="noreferrer">
                             abrir link
                           </a>
                         ) : (
-                          "—"
+                          "Não informado"
                         )}
                       </p>
                     </div>

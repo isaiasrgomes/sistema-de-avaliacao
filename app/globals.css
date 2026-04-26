@@ -63,5 +63,6 @@
       linear-gradient(to bottom, hsl(var(--background)), hsl(var(--background)));
     background-attachment: fixed;
     min-height: 100vh;
+    overflow-x: hidden;
   }
 }

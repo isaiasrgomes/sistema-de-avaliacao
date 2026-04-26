@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { destinoAposLogin } from "@/lib/auth/destino-pos-login";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 function AuthCallbackInner() {
   const router = useRouter();
@@ -25,8 +26,9 @@ function AuthCallbackInner() {
         url.searchParams.get("error_description")?.replace(/\+/g, " ") ?? url.searchParams.get("error");
 
       if (errParam) {
-        setMessage(errDesc || "Falha na autenticação.");
-        router.replace(`/login?error=${encodeURIComponent(errDesc || errParam)}`);
+        const msg = getUserFriendlyErrorMessage(errDesc || errParam, "Não foi possível concluir o login.");
+        setMessage(msg);
+        router.replace(`/login?error=${encodeURIComponent(msg)}`);
         return;
       }
 
@@ -48,8 +50,9 @@ function AuthCallbackInner() {
         if (access_token && refresh_token) {
           const { error } = await supabase.auth.setSession({ access_token, refresh_token });
           if (error) {
-            setMessage(error.message);
-            router.replace(`/login?error=${encodeURIComponent(error.message)}`);
+            const msg = getUserFriendlyErrorMessage(error, "Não foi possível validar sua sessão.");
+            setMessage(msg);
+            router.replace(`/login?error=${encodeURIComponent(msg)}`);
             return;
           }
         }

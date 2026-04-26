@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { Toaster } from "@/components/ui/sonner";
+import { AppToaster } from "@/components/app-toaster";
 import { SessionIdleTimeout } from "@/components/session-idle-timeout";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -23,11 +23,11 @@ export default function RootLayout({
       <body className={`${inter.variable} min-h-screen font-sans antialiased`}>
         <ThemeProvider>
           <SessionIdleTimeout />
-          <div className="fixed bottom-4 right-4 z-[100] md:bottom-auto md:top-4">
+          <div className="fixed right-4 top-4 z-[100]">
             <ThemeToggle />
           </div>
           {children}
-          <Toaster richColors position="top-center" />
+          <AppToaster />
         </ThemeProvider>
       </body>
     </html>

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { logAuditoria } from "@/lib/services/audit";
 import Papa from "papaparse";
 import { enviarCredenciaisAvaliadorResend, gerarSenhaAleatoria } from "@/lib/services/email-reminders";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 async function requireCoord() {
   const supabase = await createServerSupabase();
@@ -44,7 +45,7 @@ export async function actionCreateAvaliador(input: {
     if (/already|exists|registered|duplicate/i.test(createErr.message)) {
       throw new Error("Já existe usuário autenticado com este e-mail.");
     }
-    throw new Error(createErr.message);
+    throw new Error(getUserFriendlyErrorMessage(createErr, "Não foi possível criar o usuário autenticado."));
   }
 
   const authId = created.user?.id;
@@ -58,7 +59,7 @@ export async function actionCreateAvaliador(input: {
     cadastro_aprovado: true,
     cadastro_recusado: false,
   });
-  if (pErr) throw new Error(pErr.message);
+  if (pErr) throw new Error("Não foi possível atualizar os dados de perfil do avaliador.");
 
   const { error } = await supabase.from("avaliadores").upsert({
     nome,
@@ -66,7 +67,7 @@ export async function actionCreateAvaliador(input: {
     instituicao: input.instituicao?.trim() || null,
     ativo: true,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error("Não foi possível salvar os dados do avaliador.");
 
   let avisoCredenciais: string | null = null;
   if (generatedPassword) {
@@ -247,19 +248,19 @@ export async function actionAprovarCadastroAvaliador(profileId: string) {
   if (!email) throw new Error("Perfil sem e-mail. O avaliador precisa usar o mesmo e-mail do cadastro na plataforma.");
 
   const { error: u1 } = await supabase.from("profiles").update({ cadastro_aprovado: true }).eq("id", profileId);
-  if (u1) throw new Error(u1.message);
+  if (u1) throw new Error("Não foi possível aprovar o cadastro neste momento.");
 
   const { data: existing } = await supabase.from("avaliadores").select("id").eq("email", email).maybeSingle();
   if (existing?.id) {
     const { error: u2 } = await supabase.from("avaliadores").update({ nome: profile.nome, ativo: true }).eq("id", existing.id);
-    if (u2) throw new Error(u2.message);
+    if (u2) throw new Error("Não foi possível atualizar o avaliador aprovado.");
   } else {
     const { error: ins } = await supabase.from("avaliadores").insert({
       nome: profile.nome,
       email,
       ativo: true,
     });
-    if (ins) throw new Error(ins.message);
+    if (ins) throw new Error("Não foi possível criar o avaliador aprovado.");
   }
 
   await logAuditoria(supabase, {
@@ -289,7 +290,7 @@ export async function actionRejeitarCadastroAvaliador(profileId: string) {
   if (profile.cadastro_recusado) throw new Error("Este cadastro já foi recusado.");
 
   const { error: u1 } = await supabase.from("profiles").update({ cadastro_recusado: true }).eq("id", profileId);
-  if (u1) throw new Error(u1.message);
+  if (u1) throw new Error("Não foi possível recusar o cadastro neste momento.");
 
   await logAuditoria(supabase, {
     usuario_id: user.id,

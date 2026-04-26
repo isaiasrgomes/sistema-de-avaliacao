@@ -5,6 +5,7 @@ import { logAuditoria } from "@/lib/services/audit";
 import { podeEnviarAvaliacaoAgora } from "@/lib/prazo-avaliacoes";
 import { verificarNecessidadeTerceiroAvaliador } from "@/lib/services/cv-service";
 import { revalidatePath } from "next/cache";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 async function requireAvaliador() {
   const supabase = await createServerSupabase();
@@ -39,6 +40,10 @@ export async function actionEnviarAvaliacao(input: {
   observacoes_gerais: string;
 }) {
   const { supabase, user } = await requireAvaliador();
+  const justificativa = input.justificativa_geral.trim();
+  if (justificativa.length < 100) {
+    throw new Error("Informe uma justificativa geral com pelo menos 100 caracteres.");
+  }
 
   const { data: cfg } = await supabase
     .from("app_config")
@@ -59,11 +64,11 @@ export async function actionEnviarAvaliacao(input: {
     nota_mercado: input.nota_mercado,
     nota_produto: input.nota_produto,
     nota_tecnologia: input.nota_tecnologia,
-    justificativa_geral: input.justificativa_geral || null,
+    justificativa_geral: justificativa || null,
     observacoes_gerais: input.observacoes_gerais || null,
     nota_total_ponderada: 0,
   });
-  if (e1) throw new Error(e1.message);
+  if (e1) throw new Error(getUserFriendlyErrorMessage(e1, "Não foi possível salvar sua avaliação."));
 
   await supabase
     .from("atribuicoes")
@@ -91,7 +96,7 @@ export async function actionDeclararImpedimento(
 ) {
   const { supabase, user, avaliadorId } = await requireAvaliador();
   const motivo = justificativa.trim();
-  if (motivo.length < 10) throw new Error("Informe uma justificativa com pelo menos 10 caracteres.");
+  if (motivo.length < 30) throw new Error("Informe uma justificativa com pelo menos 30 caracteres.");
 
   await supabase.from("impedimentos").insert({
     projeto_id: projetoId,

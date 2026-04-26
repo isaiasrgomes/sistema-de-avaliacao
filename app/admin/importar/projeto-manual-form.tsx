@@ -8,9 +8,17 @@ import { actionCadastrarProjetoManual } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UfBrasil } from "@/lib/constants/brasil";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
+import {
+  CONVERSA_CLIENTES_OPTIONS,
+  RESPOSTA_ENCONTROS_OPTIONS,
+  SETOR_APLICACAO_OPTIONS,
+  TEMPO_DEDICACAO_OPTIONS,
+} from "@/lib/constants/projeto-inscricao";
 
 function somenteDigitos(v: string) {
   return v.replace(/\D/g, "");
@@ -43,6 +51,17 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
       uf: "PE",
       fase: "IDEACAO",
       categoria_setor: "",
+      equipe_descricao: "",
+      equipe_quantidade_membros: 1,
+      equipe_tempo_dedicacao: TEMPO_DEDICACAO_OPTIONS[0],
+      equipe_participa_encontros: RESPOSTA_ENCONTROS_OPTIONS[0],
+      mercado_problema: "",
+      mercado_conversou_clientes: CONVERSA_CLIENTES_OPTIONS[0],
+      mercado_perfil_clientes: "",
+      mercado_estimativa_publico: "",
+      tecnologia_diferencial: "",
+      setor_aplicacao_lista: SETOR_APLICACAO_OPTIONS[0],
+      setor_aplicacao_outro: "",
       url_video_pitch: "",
       timestamp_submissao: defaultTimestampLocal(),
     }),
@@ -73,7 +92,7 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
               toast.success(r.tipo === "inserido" ? "Projeto inscrito com sucesso." : "Projeto atualizado (mesmo CPF + nome).");
               form.reset({ ...defaults, timestamp_submissao: defaultTimestampLocal() });
             } catch (e: unknown) {
-              toast.error(e instanceof Error ? e.message : "Erro ao salvar");
+              toast.error(getUserFriendlyErrorMessage(e, "Não foi possível salvar a inscrição."));
             }
           })}
         >
@@ -176,6 +195,122 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
                 <p className="text-xs text-destructive">{form.formState.errors.categoria_setor.message}</p>
               )}
             </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="equipe_descricao">Equipe empreendedora: descrição *</Label>
+              <Textarea id="equipe_descricao" rows={4} {...form.register("equipe_descricao")} />
+              {form.formState.errors.equipe_descricao && (
+                <p className="text-xs text-destructive">{form.formState.errors.equipe_descricao.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="equipe_quantidade_membros">Quantidade de membros da equipe *</Label>
+              <Input
+                id="equipe_quantidade_membros"
+                type="number"
+                min={1}
+                max={50}
+                {...form.register("equipe_quantidade_membros", { valueAsNumber: true })}
+              />
+              {form.formState.errors.equipe_quantidade_membros && (
+                <p className="text-xs text-destructive">{form.formState.errors.equipe_quantidade_membros.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="equipe_tempo_dedicacao">Tempo dedicado ao projeto *</Label>
+              <select
+                id="equipe_tempo_dedicacao"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                {...form.register("equipe_tempo_dedicacao")}
+              >
+                {TEMPO_DEDICACAO_OPTIONS.map((op) => (
+                  <option key={op} value={op}>
+                    {op}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="equipe_participa_encontros">Participa de encontros obrigatórios? *</Label>
+              <select
+                id="equipe_participa_encontros"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                {...form.register("equipe_participa_encontros")}
+              >
+                {RESPOSTA_ENCONTROS_OPTIONS.map((op) => (
+                  <option key={op} value={op}>
+                    {op}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="mercado_problema">Problema/oportunidade de mercado *</Label>
+              <Textarea id="mercado_problema" rows={4} {...form.register("mercado_problema")} />
+              {form.formState.errors.mercado_problema && (
+                <p className="text-xs text-destructive">{form.formState.errors.mercado_problema.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mercado_conversou_clientes">Você já conversou com potenciais clientes? *</Label>
+              <select
+                id="mercado_conversou_clientes"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                {...form.register("mercado_conversou_clientes")}
+              >
+                {CONVERSA_CLIENTES_OPTIONS.map((op) => (
+                  <option key={op} value={op}>
+                    {op}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="mercado_perfil_clientes">Primeiros clientes (perfil) *</Label>
+              <Textarea id="mercado_perfil_clientes" rows={3} {...form.register("mercado_perfil_clientes")} />
+              {form.formState.errors.mercado_perfil_clientes && (
+                <p className="text-xs text-destructive">{form.formState.errors.mercado_perfil_clientes.message}</p>
+              )}
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="mercado_estimativa_publico">Estimativa de público interessado *</Label>
+              <Input id="mercado_estimativa_publico" {...form.register("mercado_estimativa_publico")} />
+              {form.formState.errors.mercado_estimativa_publico && (
+                <p className="text-xs text-destructive">{form.formState.errors.mercado_estimativa_publico.message}</p>
+              )}
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="tecnologia_diferencial">Tecnologia e diferencial *</Label>
+              <Textarea id="tecnologia_diferencial" rows={4} {...form.register("tecnologia_diferencial")} />
+              {form.formState.errors.tecnologia_diferencial && (
+                <p className="text-xs text-destructive">{form.formState.errors.tecnologia_diferencial.message}</p>
+              )}
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="setor_aplicacao_lista">Setor de aplicação da solução (dropdown) *</Label>
+              <select
+                id="setor_aplicacao_lista"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                {...form.register("setor_aplicacao_lista")}
+              >
+                {SETOR_APLICACAO_OPTIONS.map((op) => (
+                  <option key={op} value={op}>
+                    {op}
+                  </option>
+                ))}
+              </select>
+              {form.formState.errors.setor_aplicacao_lista && (
+                <p className="text-xs text-destructive">{form.formState.errors.setor_aplicacao_lista.message}</p>
+              )}
+            </div>
+            {form.watch("setor_aplicacao_lista") === "Outro" && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="setor_aplicacao_outro">Descreva o setor (Outro) *</Label>
+                <Input id="setor_aplicacao_outro" {...form.register("setor_aplicacao_outro")} />
+                {form.formState.errors.setor_aplicacao_outro && (
+                  <p className="text-xs text-destructive">{form.formState.errors.setor_aplicacao_outro.message}</p>
+                )}
+              </div>
+            )}
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="url_video_pitch">URL do vídeo pitch</Label>
               <Input id="url_video_pitch" type="url" placeholder="https://..." {...form.register("url_video_pitch")} />

@@ -1,9 +1,10 @@
-import { createServerSupabase } from "@/lib/supabase/server";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { createServerSupabase } from "@/lib/supabase/server";
+import { podeEnviarAvaliacaoAgora } from "@/lib/prazo-avaliacoes";
+import { AvaliacaoForm } from "../avaliacao-form";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { getStatusLabel } from "@/lib/utils/status";
-import { ProjetoDetalhesSetores } from "@/components/projeto-detalhes-setores";
 
 function statusBadgeClass(status: string) {
   switch (status) {
@@ -20,7 +21,7 @@ function statusBadgeClass(status: string) {
   }
 }
 
-export default async function AvaliadorProjetoPage({
+export default async function AvaliarProjetoPage({
   params,
   searchParams,
 }: {
@@ -29,36 +30,61 @@ export default async function AvaliadorProjetoPage({
 }) {
   const supabase = await createServerSupabase();
   const { data: projeto } = await supabase.from("projetos").select("*").eq("id", params.id).single();
+  const atribId = searchParams.atribuicao;
+  const { data: atrib } = atribId
+    ? await supabase.from("atribuicoes").select("*").eq("id", atribId).single()
+    : { data: null };
+
+  const { data: exist } = atribId
+    ? await supabase.from("avaliacoes").select("*").eq("atribuicao_id", atribId).maybeSingle()
+    : { data: null };
+
+  const { data: cfgPrazo } = await supabase
+    .from("app_config")
+    .select("avaliacoes_inicio, avaliacoes_fim, prorrogacao_fim, prorrogacao_utilizada")
+    .eq("id", 1)
+    .maybeSingle();
+  const prazoEnvio = cfgPrazo ? podeEnviarAvaliacaoAgora(cfgPrazo) : { ok: true as const };
 
   if (!projeto) return <p>Projeto não encontrado.</p>;
-  const avaliarHref = searchParams.atribuicao
-    ? `/avaliador/projeto/${projeto.id}/avaliar?atribuicao=${searchParams.atribuicao}`
-    : `/avaliador/projeto/${projeto.id}/avaliar`;
+  const visualizarHref = atribId ? `/avaliador/projeto/${projeto.id}?atribuicao=${atribId}` : `/avaliador/projeto/${projeto.id}`;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="space-y-3 rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <h1 className="text-2xl font-bold">{projeto.nome_projeto}</h1>
+          <h1 className="text-2xl font-bold">Avaliação: {projeto.nome_projeto}</h1>
           <Badge variant="outline" className={statusBadgeClass(projeto.status)}>
             {getStatusLabel(projeto.status)}
           </Badge>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm">
-            <Link href={avaliarHref}>Avaliar</Link>
+          <Button asChild size="sm" variant="outline">
+            <Link href={visualizarHref}>Visualizar projeto</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/docs/manual-avaliador.pdf" target="_blank" rel="noreferrer">
+              Manual do avaliador
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/docs/regulamento.pdf" target="_blank" rel="noreferrer">
+              Regulamento (edital)
+            </Link>
           </Button>
           <Button asChild size="sm" variant="outline">
             <Link href="/avaliador">Voltar para lista</Link>
           </Button>
         </div>
-        <ProjetoDetalhesSetores projeto={projeto} />
       </div>
-      {projeto.url_video_pitch && (
-        <div className="aspect-video w-full overflow-hidden rounded-lg border bg-black">
-          <iframe title="pitch" className="h-full w-full" src={projeto.url_video_pitch} allowFullScreen />
-        </div>
-      )}
+
+      <AvaliacaoForm
+        projetoId={projeto.id}
+        atribuicaoId={atrib?.id ?? ""}
+        readOnly={!!exist || atrib?.status === "CONCLUIDA"}
+        motivoBloqueioPrazo={!prazoEnvio.ok ? prazoEnvio.motivo : undefined}
+        initial={exist ?? undefined}
+      />
     </div>
   );
 }

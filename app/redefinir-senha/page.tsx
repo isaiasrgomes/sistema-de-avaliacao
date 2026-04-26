@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 export default function RedefinirSenhaPage() {
   const [senha, setSenha] = useState("");
@@ -28,7 +29,7 @@ export default function RedefinirSenhaPage() {
     const { error } = await supabase.auth.updateUser({ password: senha });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(getUserFriendlyErrorMessage(error, "Não foi possível atualizar sua senha."));
       return;
     }
     toast.success("Senha atualizada com sucesso. Faça login novamente.");

@@ -20,4 +20,4 @@ ALTER TABLE public.atribuicoes
 
 ALTER TABLE public.atribuicoes
   ADD CONSTRAINT atribuicoes_ordem_check
-  CHECK (ordem >= 1 AND ordem <= 20);
+  CHECK (ordem >= 1 AND ordem <= 50);

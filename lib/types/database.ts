@@ -38,6 +38,17 @@ export interface Projeto {
   uf: string;
   fase: ProjetoFase;
   categoria_setor: string;
+  equipe_descricao: string | null;
+  equipe_quantidade_membros: number | null;
+  equipe_tempo_dedicacao: string | null;
+  equipe_participa_encontros: string | null;
+  mercado_problema: string | null;
+  mercado_conversou_clientes: string | null;
+  mercado_perfil_clientes: string | null;
+  mercado_estimativa_publico: string | null;
+  tecnologia_diferencial: string | null;
+  setor_aplicacao_lista: string | null;
+  setor_aplicacao_outro: string | null;
   is_sertao: boolean;
   url_video_pitch: string | null;
   timestamp_submissao: string;

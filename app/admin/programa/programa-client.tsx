@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { actionLembreteAvaliadoresPendentes, actionProrrogarPrazo, actionSalvarPrograma } from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 function toLocalInput(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -90,7 +91,7 @@ export function ProgramaClient({
               toast.success("Programa salvo");
               window.location.reload();
             } catch (e: unknown) {
-              toast.error(e instanceof Error ? e.message : "Erro");
+              toast.error(getUserFriendlyErrorMessage(e, "Não foi possível salvar as configurações do programa."));
             } finally {
               setLoading(null);
             }
@@ -139,7 +140,7 @@ export function ProgramaClient({
                   setUtilizada(true);
                   window.location.reload();
                 } catch (e: unknown) {
-                  toast.error(e instanceof Error ? e.message : "Erro");
+                  toast.error(getUserFriendlyErrorMessage(e, "Não foi possível registrar a prorrogação."));
                 } finally {
                   setLoading(null);
                 }
@@ -172,7 +173,7 @@ export function ProgramaClient({
               }
               if (r.aviso) toast.message(r.aviso);
             } catch (e: unknown) {
-              toast.error(e instanceof Error ? e.message : "Erro");
+              toast.error(getUserFriendlyErrorMessage(e, "Não foi possível enviar os lembretes."));
             } finally {
               setLoading(null);
             }

@@ -13,6 +13,7 @@ import { SertaoMakerBrand } from "@/components/brand-logo";
 import { toast } from "sonner";
 import { destinoAposLogin } from "@/lib/auth/destino-pos-login";
 import { buildAuthCallbackUrl } from "@/lib/auth/auth-redirect-url";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 export function CadastroAvaliadorForm() {
   const [nome, setNome] = useState("");
@@ -47,7 +48,7 @@ export function CadastroAvaliadorForm() {
     });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(getUserFriendlyErrorMessage(error, "Não foi possível criar sua conta agora. Tente novamente."));
       return;
     }
     if (data.session && data.user) {

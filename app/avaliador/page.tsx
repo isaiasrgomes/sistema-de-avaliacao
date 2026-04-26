@@ -19,15 +19,18 @@ export default async function AvaliadorHomePage() {
 
   const { data: atribs } = await supabase
     .from("atribuicoes")
-    .select("id, status, projeto_id, ordem")
+    .select("id, status, projeto_id")
     .eq("avaliador_id", av.id)
     .order("data_atribuicao", { ascending: false });
 
   const projetoIds = Array.from(new Set((atribs ?? []).map((a) => a.projeto_id)));
   const { data: projetos } =
     projetoIds.length > 0
-      ? await supabase.from("projetos").select("id, nome_projeto, status").in("id", projetoIds)
-      : { data: [] as { id: string; nome_projeto: string; status: string }[] };
+      ? await supabase
+          .from("projetos")
+          .select("id, nome_projeto, status, municipio, fase, nome_responsavel")
+          .in("id", projetoIds)
+      : { data: [] as { id: string; nome_projeto: string; status: string; municipio: string; fase: string; nome_responsavel: string }[] };
 
   const mapP = new Map(projetos?.map((p) => [p.id, p]));
   const rows = (atribs ?? []).map((a) => {
@@ -36,9 +39,11 @@ export default async function AvaliadorHomePage() {
       id: a.id,
       status: a.status,
       projeto_id: a.projeto_id,
-      ordem: a.ordem,
       nome_projeto: p?.nome_projeto ?? a.projeto_id,
       projeto_status: p?.status ?? "INSCRITO",
+      municipio: p?.municipio ?? "—",
+      fase: p?.fase ?? "—",
+      nome_responsavel: p?.nome_responsavel ?? "—",
     };
   });
   const { data: cfgPrazo } = await supabase

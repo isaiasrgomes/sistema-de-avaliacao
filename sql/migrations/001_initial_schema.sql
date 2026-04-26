@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS public.atribuicoes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   avaliador_id uuid NOT NULL REFERENCES public.avaliadores (id) ON DELETE CASCADE,
   projeto_id uuid NOT NULL REFERENCES public.projetos (id) ON DELETE CASCADE,
-  ordem int NOT NULL CHECK (ordem >= 1 AND ordem <= 3),
+  ordem int NOT NULL CHECK (ordem >= 1 AND ordem <= 50),
   status public.atribuicao_status NOT NULL DEFAULT 'PENDENTE'::public.atribuicao_status,
   data_atribuicao timestamptz NOT NULL DEFAULT now(),
   data_conclusao timestamptz,

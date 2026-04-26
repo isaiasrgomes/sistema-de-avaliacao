@@ -16,6 +16,7 @@ import {
 } from "@/app/actions/avaliadores-crud";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 type Row = Avaliador & { carga: number };
 
@@ -114,7 +115,7 @@ export function AvaliadoresClient({
                             toast.success("Cadastro aprovado.");
                             window.location.reload();
                           } catch (e: unknown) {
-                            toast.error(e instanceof Error ? e.message : "Erro");
+                            toast.error(getUserFriendlyErrorMessage(e, "Não foi possível aprovar o cadastro."));
                           }
                         }}
                       >
@@ -137,7 +138,7 @@ export function AvaliadoresClient({
                             toast.success("Cadastro não aceito.");
                             window.location.reload();
                           } catch (e: unknown) {
-                            toast.error(e instanceof Error ? e.message : "Erro");
+                            toast.error(getUserFriendlyErrorMessage(e, "Não foi possível atualizar o cadastro."));
                           }
                         }}
                       >
@@ -181,7 +182,7 @@ export function AvaliadoresClient({
               }
               window.location.reload();
             } catch (e: unknown) {
-              toast.error(e instanceof Error ? e.message : "Erro");
+              toast.error(getUserFriendlyErrorMessage(e, "Não foi possível adicionar o avaliador."));
             }
           }}
         >
@@ -232,7 +233,7 @@ export function AvaliadoresClient({
                 }
                 window.location.reload();
               } catch (e: unknown) {
-                toast.error(e instanceof Error ? e.message : "Erro");
+                toast.error(getUserFriendlyErrorMessage(e, "Não foi possível importar o CSV."));
               }
             }}
           >

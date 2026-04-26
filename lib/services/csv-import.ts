@@ -38,6 +38,14 @@ function normalizarCategoriaSetor(valor: string) {
   return norm(valor).split(",")[0]?.trim() ?? "";
 }
 
+function parseQuantidadeMembros(valor: string): number | null {
+  const d = somenteDigitos(valor);
+  if (!d) return null;
+  const n = Number(d);
+  if (!Number.isFinite(n) || n < 1) return null;
+  return n;
+}
+
 function mapHeader(h: string) {
   const k = normalizeHeaderKey(h);
   const aliases: Record<string, string> = {
@@ -66,7 +74,7 @@ function mapHeader(h: string) {
     município: "municipio",
     municipio: "municipio",
     uf: "uf",
-    indique_o_setor_de_aplicacao_da_sua_solucao: "categoria_setor",
+    indique_o_setor_de_aplicacao_da_sua_solucao: "setor_aplicacao_lista",
     fase: "fase",
     categoria: "categoria_setor",
     categoria_setor: "categoria_setor",
@@ -78,6 +86,20 @@ function mapHeader(h: string) {
     carimbo_de_data_hora: "timestamp_submissao",
     timestamp: "timestamp_submissao",
     carimbo_datahora: "timestamp_submissao",
+    descreva_a_equipe_nome_formacao_area_e_papel_de_cada_integrante: "equipe_descricao",
+    quantidade_de_membros_na_equipe_incluindo_voce: "equipe_quantidade_membros",
+    quanto_tempo_a_equipe_dedica_ou_dedicara_ao_projeto: "equipe_tempo_dedicacao",
+    voce_ou_sua_equipe_pode_participar_de_encontros_obrigatorios_online_as_quartas_feiras:
+      "equipe_participa_encontros",
+    qual_problema_ou_necessidade_a_sua_solucao_busca_resolver: "mercado_problema",
+    voce_ja_conversou_com_potenciais_clientes_sobre_esse_problema: "mercado_conversou_clientes",
+    quem_seriam_seus_primeiros_clientes_descreva_o_perfil: "mercado_perfil_clientes",
+    voce_tem_alguma_estimativa_de_quantas_pessoas_poderiam_se_interessar_pela_sua_solucao:
+      "mercado_estimativa_publico",
+    como_o_seu_produto_servico_se_diferencia_dos_demais_existentes: "tecnologia_diferencial",
+    indique_o_setor_de_aplicacao_da_sua_solucao_dropdown: "setor_aplicacao_lista",
+    setor_aplicacao_lista: "setor_aplicacao_lista",
+    setor_aplicacao_outro: "setor_aplicacao_outro",
   };
   if (aliases[k]) return aliases[k];
   if (k.includes("nome_do_projeto") || k.includes("nome_projeto")) return "nome_projeto";
@@ -90,6 +112,16 @@ function mapHeader(h: string) {
   if (k.includes("setor_de_aplicacao") || k.includes("categoria")) return "categoria_setor";
   if (k.includes("video") && k.includes("pitch")) return "url_video_pitch";
   if (k.includes("carimbo") || k.includes("timestamp") || k.includes("data_hora")) return "timestamp_submissao";
+  if (k.includes("descreva_a_equipe") || k.includes("formacao_area") || k.includes("papel_de_cada_integrante")) return "equipe_descricao";
+  if (k.includes("quantidade_de_membros_na_equipe")) return "equipe_quantidade_membros";
+  if (k.includes("tempo_a_equipe_dedica")) return "equipe_tempo_dedicacao";
+  if (k.includes("participar_de_encontros_obrigatorios")) return "equipe_participa_encontros";
+  if (k.includes("problema_ou_necessidade") && k.includes("busca_resolver")) return "mercado_problema";
+  if (k.includes("conversou_com_potenciais_clientes")) return "mercado_conversou_clientes";
+  if (k.includes("primeiros_clientes") && k.includes("perfil")) return "mercado_perfil_clientes";
+  if (k.includes("estimativa_de_quantas_pessoas")) return "mercado_estimativa_publico";
+  if (k.includes("produto_servico") && k.includes("diferencia")) return "tecnologia_diferencial";
+  if (k.includes("setor_de_aplicacao")) return "setor_aplicacao_lista";
   return k;
 }
 
@@ -179,7 +211,8 @@ export async function importarCSVProjetos(
     const cpfResponsavel = somenteDigitos(norm(r.cpf_responsavel));
     const municipioFix = corrigirMunicipioPeloCatalogo(r.municipio, sertaoCatalogo);
     const municipio = limitarCampo(norm(municipioFix.municipio), 255);
-    const categoriaSetor = normalizarCategoriaSetor(r.categoria_setor);
+    const categoriaSetor = normalizarCategoriaSetor(r.categoria_setor || r.setor_aplicacao_lista);
+    const equipeQuantidadeMembros = parseQuantidadeMembros(r.equipe_quantidade_membros);
 
     const uf = (r.uf || "PE").toUpperCase();
     if (!ufsSet.has(uf as (typeof UFS_BRASIL)[number])) {
@@ -194,6 +227,16 @@ export async function importarCSVProjetos(
       !cpfResponsavel ||
       !municipio ||
       !categoriaSetor ||
+      !r.equipe_descricao ||
+      !equipeQuantidadeMembros ||
+      !r.equipe_tempo_dedicacao ||
+      !r.equipe_participa_encontros ||
+      !r.mercado_problema ||
+      !r.mercado_conversou_clientes ||
+      !r.mercado_perfil_clientes ||
+      !r.mercado_estimativa_publico ||
+      !r.tecnologia_diferencial ||
+      !r.setor_aplicacao_lista ||
       !r.timestamp_submissao
     ) {
       erros.push(`Linha incompleta: ${nomeProjeto || cpfResponsavel || "?"}`);
@@ -226,6 +269,17 @@ export async function importarCSVProjetos(
       uf,
       fase: parseFase(r.fase || "IDEACAO"),
       categoria_setor: categoriaSetor,
+      equipe_descricao: norm(r.equipe_descricao),
+      equipe_quantidade_membros: equipeQuantidadeMembros,
+      equipe_tempo_dedicacao: norm(r.equipe_tempo_dedicacao),
+      equipe_participa_encontros: norm(r.equipe_participa_encontros),
+      mercado_problema: norm(r.mercado_problema),
+      mercado_conversou_clientes: norm(r.mercado_conversou_clientes),
+      mercado_perfil_clientes: norm(r.mercado_perfil_clientes),
+      mercado_estimativa_publico: norm(r.mercado_estimativa_publico),
+      tecnologia_diferencial: norm(r.tecnologia_diferencial),
+      setor_aplicacao_lista: norm(r.setor_aplicacao_lista),
+      setor_aplicacao_outro: norm(r.setor_aplicacao_outro),
       is_sertao: isSertao,
       url_video_pitch: r.url_video_pitch || null,
       timestamp_submissao: parsedTimestamp,

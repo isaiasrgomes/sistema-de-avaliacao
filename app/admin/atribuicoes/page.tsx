@@ -9,7 +9,6 @@ export default async function AtribuicoesPage() {
   const { data: projetos } = await supabase
     .from("projetos")
     .select("id, nome_projeto, status")
-    .in("status", ["INSCRITO", "EM_AVALIACAO", "AGUARDANDO_3O_AVALIADOR"])
     .order("nome_projeto");
   const { data: avaliadores } = await supabase.from("avaliadores").select("id, nome, email").eq("ativo", true).order("nome");
 
