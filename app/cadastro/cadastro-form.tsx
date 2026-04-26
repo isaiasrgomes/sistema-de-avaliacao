@@ -117,7 +117,7 @@ export function CadastroAvaliadorForm() {
                     autoComplete="new-password"
                     value={senha}
                     onChange={(e) => setSenha(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="********"
                   />
                 </div>
                 <div className="space-y-2">
@@ -128,6 +128,7 @@ export function CadastroAvaliadorForm() {
                     autoComplete="new-password"
                     value={senha2}
                     onChange={(e) => setSenha2(e.target.value)}
+                    placeholder="********"
                   />
                 </div>
                 <Button className="w-full" type="submit" disabled={loading}>
