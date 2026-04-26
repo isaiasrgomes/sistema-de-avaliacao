@@ -9,6 +9,8 @@ function statusBadgeClass(status: string) {
   switch (status) {
     case "INSCRITO":
       return "border-slate-500/35 bg-slate-500/10 text-slate-700 dark:border-slate-300/35 dark:bg-slate-200/10 dark:text-slate-200";
+    case "DESCLASSIFICADO":
+      return "border-rose-500/35 bg-rose-500/10 text-rose-700 dark:border-rose-300/40 dark:bg-rose-300/15 dark:text-rose-200";
     case "EM_AVALIACAO":
       return "border-violet-500/35 bg-violet-500/10 text-violet-700 dark:border-violet-300/40 dark:bg-violet-300/15 dark:text-violet-200";
     case "AGUARDANDO_3O_AVALIADOR":
@@ -20,23 +22,14 @@ function statusBadgeClass(status: string) {
   }
 }
 
-export default async function AvaliadorProjetoPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: { atribuicao?: string };
-}) {
+export default async function AdminProjetoDetalhesPage({ params }: { params: { id: string } }) {
   const supabase = await createServerSupabase();
   const { data: projeto } = await supabase.from("projetos").select("*").eq("id", params.id).single();
 
   if (!projeto) return <p>Projeto não encontrado.</p>;
-  const avaliarHref = searchParams.atribuicao
-    ? `/avaliador/projeto/${projeto.id}/avaliar?atribuicao=${searchParams.atribuicao}`
-    : `/avaliador/projeto/${projeto.id}/avaliar`;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <div className="space-y-3 rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <h1 className="text-2xl font-bold">{projeto.nome_projeto}</h1>
@@ -45,25 +38,26 @@ export default async function AvaliadorProjetoPage({
           </Badge>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm">
-            <Link href={avaliarHref}>Avaliar</Link>
-          </Button>
           <Button asChild size="sm" variant="outline">
-            <Link href="/avaliador">Voltar para lista</Link>
+            <Link href={`/admin/projetos#${projeto.id}`}>Voltar para lista</Link>
           </Button>
         </div>
-        <p className="text-sm">
-          <strong>Vídeo pitch:</strong>{" "}
-          {projeto.url_video_pitch ? (
-            <a href={projeto.url_video_pitch} className="text-primary underline" target="_blank" rel="noreferrer">
-              abrir link
-            </a>
-          ) : (
-            "Não informado"
-          )}
-        </p>
-        <ProjetoDetalhesSetores projeto={projeto} />
+
+        <div className="space-y-3">
+          <ProjetoDetalhesSetores projeto={projeto} />
+          <p className="text-sm">
+            <strong>Vídeo pitch:</strong>{" "}
+            {projeto.url_video_pitch ? (
+              <a href={projeto.url_video_pitch} className="text-primary underline" target="_blank" rel="noreferrer">
+                abrir link
+              </a>
+            ) : (
+              "Não informado"
+            )}
+          </p>
+        </div>
       </div>
     </div>
   );
 }
+

@@ -1,22 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { Projeto, ProjetoFase, ProjetoStatus } from "@/lib/types/database";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { actionDesclassificar, actionReclassificar } from "@/app/actions/admin";
 import { toast } from "sonner";
-import { ProjetoDetalhesSetores } from "@/components/projeto-detalhes-setores";
 
 function labelStatus(status: ProjetoStatus) {
   switch (status) {
@@ -50,7 +44,6 @@ export function ProjetosClient({ initial }: { initial: Projeto[] }) {
   const [fase, setFase] = useState<ProjetoFase | "">("");
   const [status, setStatus] = useState<ProjetoStatus | "">("");
   const [motivo, setMotivo] = useState("");
-  const [openId, setOpenId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -154,31 +147,9 @@ export function ProjetosClient({ initial }: { initial: Projeto[] }) {
                 )}
               </TableCell>
               <TableCell className="text-right space-x-2">
-                <Dialog open={openId === p.id} onOpenChange={(o) => setOpenId(o ? p.id : null)}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      Detalhes
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>{p.nome_projeto}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                      <ProjetoDetalhesSetores projeto={p} />
-                      <p className="text-sm">
-                        <strong>Vídeo pitch:</strong>{" "}
-                        {p.url_video_pitch ? (
-                          <a href={p.url_video_pitch} className="text-primary underline" target="_blank" rel="noreferrer">
-                            abrir link
-                          </a>
-                        ) : (
-                          "Não informado"
-                        )}
-                      </p>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/admin/projetos/${p.id}`}>Detalhes</Link>
+                </Button>
                 {p.status !== "DESCLASSIFICADO" ? (
                   <Dialog>
                     <DialogTrigger asChild>
