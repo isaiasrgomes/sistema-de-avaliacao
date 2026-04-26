@@ -2,7 +2,6 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const MAX_SINGLE_HEADER_BYTES = 16 * 1024;
-const MAX_TOTAL_HEADERS_BYTES = 32 * 1024;
 
 function clearSupabaseAuthCookies(request: NextRequest, response: NextResponse) {
   for (const cookie of request.cookies.getAll()) {
@@ -20,33 +19,20 @@ function getByteLength(value: string) {
   return new TextEncoder().encode(value).length;
 }
 
-function hasOversizedHeaders(request: NextRequest) {
-  let total = 0;
-  for (const [name, value] of request.headers.entries()) {
-    const lineSize = getByteLength(name) + 2 + getByteLength(value);
-    if (lineSize > MAX_SINGLE_HEADER_BYTES) return true;
-    total += lineSize;
-    if (total > MAX_TOTAL_HEADERS_BYTES) return true;
-  }
-  return false;
-}
-
 function hasOversizedCookies(request: NextRequest) {
-  const cookieHeader = request.headers.get("cookie") ?? "";
-  if (!cookieHeader) return false;
-
-  if (getByteLength(cookieHeader) > MAX_SINGLE_HEADER_BYTES) return true;
-  if (request.cookies.getAll().some((cookie) => getByteLength(cookie.value) > 4096)) return true;
-  return false;
+  return request.cookies
+    .getAll()
+    .some(
+      (cookie) =>
+        cookie.name.startsWith("sb-") &&
+        cookie.name.includes("auth-token") &&
+        getByteLength(cookie.value) > MAX_SINGLE_HEADER_BYTES
+    );
 }
 
 export async function middleware(request: NextRequest) {
-  const oversizedHeaders = hasOversizedHeaders(request);
   const oversizedCookies = hasOversizedCookies(request);
-  const oversizedAuthCookie = request.cookies
-    .getAll()
-    .some((cookie) => cookie.name.startsWith("sb-") && cookie.name.includes("auth-token") && cookie.value.length > 2500);
-  if (oversizedAuthCookie || oversizedHeaders || oversizedCookies) {
+  if (oversizedCookies) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("erro", "sessao-redefinida");
     const redirect = NextResponse.redirect(loginUrl);
