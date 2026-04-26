@@ -5,3 +5,4 @@ ALTER TABLE public.profiles
   DROP COLUMN IF EXISTS foto_url;
 
 DROP POLICY IF EXISTS profiles_update_self ON public.profiles;
+ 

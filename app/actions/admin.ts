@@ -321,6 +321,9 @@ export async function actionAtribuirTerceiro(projetoId: string, avaliadorId: str
     .select("id, projeto_id, avaliador_id, ordem")
     .single();
   throwIfAtribuicaoInsertError(insErr);
+  if (!inserted) {
+    throw new Error("Falha ao criar atribuição: retorno vazio do banco.");
+  }
   await notificarNovasAtribuicoes(supabase, [
     {
       projeto_id: inserted.projeto_id,

@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { projetoManualSchema, type ProjetoManualInput } from "@/lib/validations/projeto-manual";
+import { z } from "zod";
+import { projetoManualSchema } from "@/lib/validations/projeto-manual";
 import { actionCadastrarProjetoManual } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +40,9 @@ function defaultTimestampLocal() {
 }
 
 export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; ufs: string[] }) {
-  const defaults = useMemo<ProjetoManualInput>(
+  type ProjetoManualFormInput = z.input<typeof projetoManualSchema>;
+
+  const defaults = useMemo<ProjetoManualFormInput>(
     () => ({
       nome_projeto: "",
       nome_responsavel: "",
@@ -68,7 +71,7 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
     []
   );
 
-  const form = useForm<ProjetoManualInput>({
+  const form = useForm<ProjetoManualFormInput>({
     resolver: zodResolver(projetoManualSchema),
     defaultValues: defaults,
   });
