@@ -20,6 +20,13 @@ function getSiteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") || "";
 }
 
+function toAbsoluteUrlOrEmpty(url?: string | null) {
+  const value = (url ?? "").trim();
+  if (!value) return "";
+  if (!/^https?:\/\//i.test(value)) return "";
+  return value.replace(/\/+$/, "");
+}
+
 function buildPublicUrl(pathname: string) {
   const base = getSiteUrl();
   const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
@@ -172,7 +179,7 @@ export async function enviarCredenciaisAvaliadorResend(
   destinatario: CredenciaisAcesso,
   opts: { programaNome?: string | null; loginUrl?: string | null }
 ): Promise<{ ok: true } | { ok: false; erro: string }> {
-  const loginUrl = opts.loginUrl?.trim() || getSiteUrl();
+  const loginUrl = toAbsoluteUrlOrEmpty(opts.loginUrl) || buildPublicUrl("/login");
   const resetPasswordHelpUrl = buildPublicUrl("/login");
   const assunto = opts.programaNome
     ? `Seu acesso foi criado — ${opts.programaNome}`
