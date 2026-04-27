@@ -226,10 +226,14 @@ export function AvaliadoresClient({
               try {
                 const res = await actionImportarAvaliadoresCSV(csvText);
                 if (res.erros.length) {
-                  toast.warning(`Importação concluída com avisos. Inseridos: ${res.inseridos}.`);
+                  toast.warning(
+                    `Importação concluída com avisos. Inseridos: ${res.inseridos}. Atualizados: ${res.atualizados}. Ignorados: ${res.ignorados}.`
+                  );
                   console.warn(res.erros);
                 } else {
-                  toast.success(`Importação concluída. Inseridos: ${res.inseridos}.`);
+                  toast.success(
+                    `Importação concluída. Inseridos: ${res.inseridos}. Atualizados: ${res.atualizados}. Ignorados: ${res.ignorados}.`
+                  );
                 }
                 window.location.reload();
               } catch (e: unknown) {

@@ -266,6 +266,7 @@ export async function importarCSVProjetos(
     }
     const cnpj = norm(r.cnpj);
     const telefone = norm(r.telefone);
+    const urlVideoPitch = norm(r.url_video_pitch);
 
     const isSertao = sertaoSet.has(municipio.toLowerCase());
     const payload = {
@@ -293,7 +294,7 @@ export async function importarCSVProjetos(
       setor_aplicacao_lista: norm(r.setor_aplicacao_lista),
       setor_aplicacao_outro: norm(r.setor_aplicacao_outro),
       is_sertao: isSertao,
-      url_video_pitch: r.url_video_pitch || null,
+      url_video_pitch: urlVideoPitch ? limitarCampo(urlVideoPitch, 2000) : null,
       timestamp_submissao: parsedTimestamp,
       status: "INSCRITO" as ProjetoStatus,
     };

@@ -39,7 +39,7 @@ export const projetoManualSchema = z.object({
   setor_aplicacao_outro: z.string().optional(),
   url_video_pitch: z
     .string()
-    .max(500)
+    .max(2000)
     .optional()
     .refine((v) => !v || /^https?:\/\/.+/i.test(v), "Informe uma URL completa (http/https) ou deixe em branco"),
   timestamp_submissao: z.string().min(1, "Data obrigatória"),

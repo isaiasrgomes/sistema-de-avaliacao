@@ -134,14 +134,17 @@ export async function actionImportarAvaliadoresCSV(csvText: string) {
   }
 
   let inseridos = 0;
+  let atualizados = 0;
+  let ignorados = 0;
   const erros: string[] = [];
   const { data: cfg } = await supabase.from("app_config").select("programa_nome").eq("id", 1).maybeSingle();
   const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? ""}/login`;
 
-  for (const row of parsed.data) {
+  for (const [idx, row] of parsed.data.entries()) {
     const { nome, email } = extrairNomeEmail(row);
     if (!nome || !email) {
-      erros.push(`Linha inválida (nome/email obrigatórios): ${JSON.stringify(row)}`);
+      ignorados += 1;
+      erros.push(`Linha ${idx + 2}: nome/email obrigatórios não encontrados (${JSON.stringify(row)})`);
       continue;
     }
     const senha = gerarSenhaAleatoria(10);
@@ -152,13 +155,30 @@ export async function actionImportarAvaliadoresCSV(csvText: string) {
       email_confirm: true,
       user_metadata: { nome },
     });
+    let authId = created.user?.id ?? null;
     if (createErr) {
-      erros.push(`${email}: ${createErr.message}`);
-      continue;
+      // Se já existir, tentamos aproveitar o profile existente pelo e-mail.
+      if (/already|exists|registered|duplicate/i.test(createErr.message)) {
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", email)
+          .maybeSingle();
+        authId = existingProfile?.id ?? null;
+        if (!authId) {
+          ignorados += 1;
+          erros.push(`Linha ${idx + 2} (${email}): já existe usuário, mas não encontrei profile por e-mail para vincular.`);
+          continue;
+        }
+      } else {
+        ignorados += 1;
+        erros.push(`Linha ${idx + 2} (${email}): ${createErr.message}`);
+        continue;
+      }
     }
-    const authId = created.user?.id;
     if (!authId) {
-      erros.push(`${email}: usuário não retornado.`);
+      ignorados += 1;
+      erros.push(`Linha ${idx + 2} (${email}): usuário não retornado.`);
       continue;
     }
 
@@ -171,7 +191,8 @@ export async function actionImportarAvaliadoresCSV(csvText: string) {
       cadastro_recusado: false,
     });
     if (pErr) {
-      erros.push(`${email}: ${pErr.message}`);
+      ignorados += 1;
+      erros.push(`Linha ${idx + 2} (${email}): ${pErr.message}`);
       continue;
     }
     const { error: avErr } = await supabase.from("avaliadores").upsert({
@@ -180,25 +201,35 @@ export async function actionImportarAvaliadoresCSV(csvText: string) {
       ativo: true,
     });
     if (avErr) {
-      erros.push(`${email}: ${avErr.message}`);
+      ignorados += 1;
+      erros.push(`Linha ${idx + 2} (${email}): ${avErr.message}`);
       continue;
     }
 
-    const sent = await enviarCredenciaisAvaliadorResend({ nome, email, senha }, { programaNome: cfg?.programa_nome, loginUrl });
-    if (!sent.ok) {
-      erros.push(`${email}: criado, mas e-mail não enviado (${sent.erro}).`);
+    if (createErr) {
+      // Já existia. Não enviamos credenciais (senha desconhecida).
+      atualizados += 1;
+      erros.push(`Linha ${idx + 2} (${email}): usuário já existia — apenas vinculei/atualizei registros (sem envio de senha).`);
+    } else {
+      const sent = await enviarCredenciaisAvaliadorResend(
+        { nome, email, senha },
+        { programaNome: cfg?.programa_nome, loginUrl }
+      );
+      if (!sent.ok) {
+        erros.push(`Linha ${idx + 2} (${email}): criado, mas e-mail não enviado (${sent.erro}).`);
+      }
+      inseridos += 1;
     }
-    inseridos += 1;
   }
 
   await logAuditoria(supabase, {
     usuario_id: user.id,
     acao: "IMPORTAR_AVALIADORES_CSV",
     entidade: "avaliadores",
-    detalhes: { inseridos, erros: erros.length },
+    detalhes: { inseridos, atualizados, ignorados, erros: erros.length },
   });
   revalidatePath("/admin/avaliadores");
-  return { inseridos, erros };
+  return { inseridos, atualizados, ignorados, erros };
 }
 
 export async function actionToggleAvaliador(id: string, ativo: boolean) {
