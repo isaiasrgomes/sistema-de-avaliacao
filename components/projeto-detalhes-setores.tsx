@@ -6,28 +6,6 @@ function valor(v: string | number | null | undefined) {
   return String(v);
 }
 
-function renderTextoEmLista(value: string | number | null | undefined) {
-  const s = value === null || value === undefined ? "" : String(value).trim();
-  if (!s) return <span>Não informado</span>;
-
-  const normalized = s.replace(/\s+/g, " ");
-
-  const slashItens = normalized.split("/").map((x) => x.trim()).filter(Boolean);
-  if (slashItens.length >= 3) {
-    return (
-      <ul className="list-disc space-y-0.5 pl-5">
-        {slashItens.map((it) => (
-          <li key={it} className="leading-relaxed">
-            {it}
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  return <span className="leading-relaxed">{normalized}</span>;
-}
-
 function renderSetorAplicacaoLista(value: string | null | undefined) {
   const s = (value ?? "").trim();
   if (!s) return <span>Não informado</span>;
