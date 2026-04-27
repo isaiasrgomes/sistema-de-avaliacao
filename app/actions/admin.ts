@@ -41,10 +41,9 @@ async function notificarNovasAtribuicoes(
   const mapProj = new Map((projetos ?? []).map((p) => [p.id, p.nome_projeto]));
   const mapAv = new Map((avaliadores ?? []).map((a) => [a.id, a]));
   const base = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") || "";
-
-  for (const row of rows) {
+  const jobs = rows.map(async (row) => {
     const av = mapAv.get(row.avaliador_id);
-    if (!av?.email) continue;
+    if (!av?.email) return;
     const projetoNome = mapProj.get(row.projeto_id) ?? row.projeto_id;
     const linkAvaliacao =
       base && row.atribuicao_id ? `${base}/avaliador/projeto/${row.projeto_id}?atribuicao=${row.atribuicao_id}` : null;
@@ -58,7 +57,8 @@ async function notificarNovasAtribuicoes(
       },
       { programaNome: cfg?.programa_nome }
     );
-  }
+  });
+  await Promise.allSettled(jobs);
 }
 
 async function avaliadorJaAvaliouProjeto(supabase: Awaited<ReturnType<typeof createServerSupabase>>, avaliadorId: string, projetoId: string) {

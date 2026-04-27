@@ -36,31 +36,41 @@ export async function gerarAtribuicoesAutomaticas(
   supabase: SupabaseClient,
   projetoIds: string[]
 ) {
+  if (!projetoIds.length) return { criadas: 0, atribuicoesCriadas: [] };
   const qtd = await getAvaliadoresPorProjetoConfig(supabase);
 
-  const { data: avaliadores } = await supabase
-    .from("avaliadores")
-    .select("id")
-    .eq("ativo", true);
+  const [{ data: avaliadores }, { data: projetosComAtribuicao }, { data: impedimentos }, { data: cargasRows }] = await Promise.all([
+    supabase.from("avaliadores").select("id").eq("ativo", true),
+    supabase.from("atribuicoes").select("projeto_id").in("projeto_id", projetoIds),
+    supabase.from("impedimentos").select("avaliador_id, projeto_id").in("projeto_id", projetoIds),
+    supabase
+      .from("atribuicoes")
+      .select("avaliador_id")
+      .in("status", ["PENDENTE", "EM_ANDAMENTO"]),
+  ]);
 
   if (!avaliadores?.length) return { criadas: 0, msg: "Nenhum avaliador ativo" };
 
   const idsA = avaliadores.map((a) => a.id);
-  let criadas = 0;
-  const atribuicoesCriadas: { id: string; projeto_id: string; avaliador_id: string; ordem: number }[] = [];
+  const projetosJaAtribuidos = new Set((projetosComAtribuicao ?? []).map((r) => r.projeto_id));
+  const impedimentosSet = new Set((impedimentos ?? []).map((r) => `${r.avaliador_id}:${r.projeto_id}`));
+
+  const cargaMap = new Map<string, number>();
+  for (const aid of idsA) cargaMap.set(aid, 0);
+  for (const row of cargasRows ?? []) {
+    const aid = row.avaliador_id;
+    cargaMap.set(aid, (cargaMap.get(aid) ?? 0) + 1);
+  }
+
+  const rowsParaInserir: { avaliador_id: string; projeto_id: string; ordem: number; status: "PENDENTE" }[] = [];
 
   for (const projetoId of projetoIds) {
-    const { data: exist } = await supabase
-      .from("atribuicoes")
-      .select("id")
-      .eq("projeto_id", projetoId)
-      .limit(1);
-    if (exist?.length) continue;
+    if (projetosJaAtribuidos.has(projetoId)) continue;
 
     const scored: { id: string; carga: number }[] = [];
     for (const aid of idsA) {
-      if (await temImpedimento(supabase, aid, projetoId)) continue;
-      const carga = await contarCargaAvaliador(supabase, aid);
+      if (impedimentosSet.has(`${aid}:${projetoId}`)) continue;
+      const carga = cargaMap.get(aid) ?? 0;
       scored.push({ id: aid, carga });
     }
     scored.sort((x, y) => x.carga - y.carga);
@@ -68,24 +78,30 @@ export async function gerarAtribuicoesAutomaticas(
     if (pick.length < qtd) continue;
 
     for (let i = 0; i < qtd; i++) {
-      const { data: inserted, error } = await supabase
-        .from("atribuicoes")
-        .insert({
-          avaliador_id: pick[i].id,
-          projeto_id: projetoId,
-          ordem: i + 1,
-          status: "PENDENTE",
-        })
-        .select("id, projeto_id, avaliador_id, ordem")
-        .single();
-      if (!error && inserted) {
-        criadas++;
-        atribuicoesCriadas.push(inserted);
-      }
+      const aid = pick[i].id;
+      rowsParaInserir.push({
+        avaliador_id: aid,
+        projeto_id: projetoId,
+        ordem: i + 1,
+        status: "PENDENTE",
+      });
+      // Atualiza a carga local para manter o balanceamento entre projetos processados.
+      cargaMap.set(aid, (cargaMap.get(aid) ?? 0) + 1);
     }
-
-    await supabase.from("projetos").update({ status: "EM_AVALIACAO" }).eq("id", projetoId);
   }
 
-  return { criadas, atribuicoesCriadas };
+  if (!rowsParaInserir.length) {
+    return { criadas: 0, atribuicoesCriadas: [] };
+  }
+
+  const { data: atribuicoesCriadas, error: insertError } = await supabase
+    .from("atribuicoes")
+    .insert(rowsParaInserir)
+    .select("id, projeto_id, avaliador_id, ordem");
+  if (insertError) throw new Error(insertError.message || "Falha ao criar atribuições automáticas.");
+
+  const projetoIdsAtualizados = Array.from(new Set(rowsParaInserir.map((r) => r.projeto_id)));
+  await supabase.from("projetos").update({ status: "EM_AVALIACAO" }).in("id", projetoIdsAtualizados);
+
+  return { criadas: atribuicoesCriadas?.length ?? 0, atribuicoesCriadas: atribuicoesCriadas ?? [] };
 }
