@@ -62,7 +62,11 @@ export default async function AvaliarProjetoPage({
           <Button asChild size="sm" variant="outline">
             <Link href={visualizarHref}>Visualizar projeto</Link>
           </Button>
-          <Button asChild size="sm" variant="outline">
+          <Button
+            asChild
+            size="sm"
+            className="bg-red-600 text-white hover:bg-red-700 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-700"
+          >
             <Link href="/docs/manual-avaliador.pdf" target="_blank" rel="noreferrer">
               Manual do avaliador
             </Link>

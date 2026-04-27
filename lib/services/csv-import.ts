@@ -96,6 +96,12 @@ function mapHeader(h: string) {
     quem_seriam_seus_primeiros_clientes_descreva_o_perfil: "mercado_perfil_clientes",
     voce_tem_alguma_estimativa_de_quantas_pessoas_poderiam_se_interessar_pela_sua_solucao:
       "mercado_estimativa_publico",
+    qual_e_o_estagio_de_maturidade_do_seu_projeto: "produto_maturidade",
+    qual_e_o_estagio_de_maturidade_do_seu_projeto_: "produto_maturidade",
+    estagio_de_maturidade_do_seu_projeto: "produto_maturidade",
+    descreva_o_seu_produto_servico_ou_processo_com_mais_detalhes: "produto_descricao",
+    descreva_o_seu_produto_servico_ou_processo_com_mais_detalhes_: "produto_descricao",
+    produto_solucao_descricao: "produto_descricao",
     como_o_seu_produto_servico_se_diferencia_dos_demais_existentes: "tecnologia_diferencial",
     indique_o_setor_de_aplicacao_da_sua_solucao_dropdown: "setor_aplicacao_lista",
     setor_aplicacao_lista: "setor_aplicacao_lista",
@@ -120,6 +126,8 @@ function mapHeader(h: string) {
   if (k.includes("conversou_com_potenciais_clientes")) return "mercado_conversou_clientes";
   if (k.includes("primeiros_clientes") && k.includes("perfil")) return "mercado_perfil_clientes";
   if (k.includes("estimativa_de_quantas_pessoas")) return "mercado_estimativa_publico";
+  if (k.includes("estagio_de_maturidade")) return "produto_maturidade";
+  if (k.includes("produto_servico_ou_processo") && k.includes("mais_detalhes")) return "produto_descricao";
   if (k.includes("produto_servico") && k.includes("diferencia")) return "tecnologia_diferencial";
   if (k.includes("setor_de_aplicacao")) return "setor_aplicacao_lista";
   return k;
@@ -235,6 +243,8 @@ export async function importarCSVProjetos(
       !r.mercado_conversou_clientes ||
       !r.mercado_perfil_clientes ||
       !r.mercado_estimativa_publico ||
+      !r.produto_maturidade ||
+      !r.produto_descricao ||
       !r.tecnologia_diferencial ||
       !r.setor_aplicacao_lista ||
       !r.timestamp_submissao
@@ -277,6 +287,8 @@ export async function importarCSVProjetos(
       mercado_conversou_clientes: norm(r.mercado_conversou_clientes),
       mercado_perfil_clientes: norm(r.mercado_perfil_clientes),
       mercado_estimativa_publico: norm(r.mercado_estimativa_publico),
+      produto_maturidade: norm(r.produto_maturidade),
+      produto_descricao: norm(r.produto_descricao),
       tecnologia_diferencial: norm(r.tecnologia_diferencial),
       setor_aplicacao_lista: norm(r.setor_aplicacao_lista),
       setor_aplicacao_outro: norm(r.setor_aplicacao_outro),

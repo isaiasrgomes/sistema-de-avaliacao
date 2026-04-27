@@ -46,6 +46,8 @@ export interface Projeto {
   mercado_conversou_clientes: string | null;
   mercado_perfil_clientes: string | null;
   mercado_estimativa_publico: string | null;
+  produto_maturidade: string | null;
+  produto_descricao: string | null;
   tecnologia_diferencial: string | null;
   setor_aplicacao_lista: string | null;
   setor_aplicacao_outro: string | null;

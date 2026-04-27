@@ -3,6 +3,7 @@ import { validarCPF } from "@/lib/utils/documentos";
 import { UFS_BRASIL } from "@/lib/constants/brasil";
 import {
   CONVERSA_CLIENTES_OPTIONS,
+  MATURIDADE_PROJETO_OPTIONS,
   RESPOSTA_ENCONTROS_OPTIONS,
   SETOR_APLICACAO_OPTIONS,
   TEMPO_DEDICACAO_OPTIONS,
@@ -31,6 +32,8 @@ export const projetoManualSchema = z.object({
   mercado_conversou_clientes: z.enum(CONVERSA_CLIENTES_OPTIONS, { message: "Selecione uma opção" }),
   mercado_perfil_clientes: z.string().min(1, "Obrigatório"),
   mercado_estimativa_publico: z.string().min(1, "Obrigatório"),
+  produto_maturidade: z.enum(MATURIDADE_PROJETO_OPTIONS, { message: "Selecione uma opção" }),
+  produto_descricao: z.string().min(1, "Obrigatório"),
   tecnologia_diferencial: z.string().min(1, "Obrigatório"),
   setor_aplicacao_lista: z.enum(SETOR_APLICACAO_OPTIONS, { message: "Selecione um setor" }),
   setor_aplicacao_outro: z.string().optional(),

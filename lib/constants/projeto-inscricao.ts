@@ -28,3 +28,13 @@ export const SETOR_APLICACAO_OPTIONS = [
   "Impacto Social (ImpactTech) — inclusão, economia solidária, acessibilidade, comunidades tradicionais",
   "Outro",
 ] as const;
+
+export const MATURIDADE_PROJETO_OPTIONS = [
+  "Ideia: a proposta ainda é uma ideia e nenhum experimento foi feito",
+  "Ideia com pesquisa inicial: já realizei pesquisas, entrevistas ou estudos sobre o tema",
+  "Protótipo Conceitual: produto foi elaborado no papel ou computador",
+  "Protótipo Testado: experimentos e testes foram realizados com consistência",
+  "Protótipo Finalizado: primeira versão com viabilidade técnica e econômica",
+  "Comercialização: já teve vendas iniciais",
+  "Pivotando: tinha outro projeto e estou mudando de direção",
+] as const;

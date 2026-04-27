@@ -53,6 +53,8 @@ export async function cadastrarOuAtualizarProjetoManual(
     mercado_conversou_clientes: norm(input.mercado_conversou_clientes),
     mercado_perfil_clientes: norm(input.mercado_perfil_clientes),
     mercado_estimativa_publico: norm(input.mercado_estimativa_publico),
+    produto_maturidade: norm(input.produto_maturidade),
+    produto_descricao: norm(input.produto_descricao),
     tecnologia_diferencial: norm(input.tecnologia_diferencial),
     setor_aplicacao_lista: norm(input.setor_aplicacao_lista),
     setor_aplicacao_outro: norm(input.setor_aplicacao_outro),

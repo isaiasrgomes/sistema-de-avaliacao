@@ -16,6 +16,7 @@ import type { UfBrasil } from "@/lib/constants/brasil";
 import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 import {
   CONVERSA_CLIENTES_OPTIONS,
+  MATURIDADE_PROJETO_OPTIONS,
   RESPOSTA_ENCONTROS_OPTIONS,
   SETOR_APLICACAO_OPTIONS,
   TEMPO_DEDICACAO_OPTIONS,
@@ -61,6 +62,8 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
       mercado_conversou_clientes: CONVERSA_CLIENTES_OPTIONS[0],
       mercado_perfil_clientes: "",
       mercado_estimativa_publico: "",
+      produto_maturidade: MATURIDADE_PROJETO_OPTIONS[0],
+      produto_descricao: "",
       tecnologia_diferencial: "",
       setor_aplicacao_lista: SETOR_APLICACAO_OPTIONS[0],
       setor_aplicacao_outro: "",
@@ -271,6 +274,30 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
               <Input id="mercado_estimativa_publico" {...form.register("mercado_estimativa_publico")} />
               {form.formState.errors.mercado_estimativa_publico && (
                 <p className="text-xs text-destructive">{form.formState.errors.mercado_estimativa_publico.message}</p>
+              )}
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="produto_maturidade">Produto/Solução: estágio de maturidade *</Label>
+              <select
+                id="produto_maturidade"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                {...form.register("produto_maturidade")}
+              >
+                {MATURIDADE_PROJETO_OPTIONS.map((op) => (
+                  <option key={op} value={op}>
+                    {op}
+                  </option>
+                ))}
+              </select>
+              {form.formState.errors.produto_maturidade && (
+                <p className="text-xs text-destructive">{form.formState.errors.produto_maturidade.message}</p>
+              )}
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="produto_descricao">Produto/Solução: descrição detalhada *</Label>
+              <Textarea id="produto_descricao" rows={4} {...form.register("produto_descricao")} />
+              {form.formState.errors.produto_descricao && (
+                <p className="text-xs text-destructive">{form.formState.errors.produto_descricao.message}</p>
               )}
             </div>
             <div className="space-y-2 sm:col-span-2">
