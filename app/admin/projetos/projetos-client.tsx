@@ -124,6 +124,8 @@ export function ProjetosClient({ initial }: { initial: Projeto[] }) {
             <TableHead>Município</TableHead>
             <TableHead>Fase</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead className="text-right">Dif. notas (1º×2º)</TableHead>
+            <TableHead className="text-center">Precisa 3º?</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -145,6 +147,18 @@ export function ProjetosClient({ initial }: { initial: Projeto[] }) {
                     Sertão
                   </Badge>
                 )}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {typeof (p as Projeto & { diff_notas_para_3o?: number | null }).diff_notas_para_3o === "number"
+                  ? (p as Projeto & { diff_notas_para_3o: number }).diff_notas_para_3o.toFixed(2)
+                  : "—"}
+              </TableCell>
+              <TableCell className="text-center">
+                {(p as Projeto & { precisa_3o_avaliador?: boolean | null }).precisa_3o_avaliador === true
+                  ? "Sim"
+                  : (p as Projeto & { precisa_3o_avaliador?: boolean | null }).precisa_3o_avaliador === false
+                    ? "Não"
+                    : "—"}
               </TableCell>
               <TableCell className="text-right space-x-2">
                 <Button asChild variant="outline" size="sm">

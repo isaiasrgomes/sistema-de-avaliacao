@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import fs from "node:fs";
 import path from "node:path";
 import SVGtoPDF from "svg-to-pdfkit";
+import { getStatusLabel } from "@/lib/utils/status";
 
 const logoHeaderPath = path.join(process.cwd(), "public", "logo-sertao-inovador.svg");
 const logoHeaderSvg = fs.existsSync(logoHeaderPath) ? fs.readFileSync(logoHeaderPath, "utf-8") : null;
@@ -164,7 +165,7 @@ export async function gerarRelatorioPDFBuffer(
       p?.nome_responsavel ?? "-",
       p?.municipio ?? "-",
       Number(r.nota_final ?? 0).toFixed(2),
-      String(r.status_final ?? "-")
+      getStatusLabel(String(r.status_final ?? "-"))
     );
     rowY += ROW_HEIGHT + 2;
   }
@@ -214,7 +215,7 @@ export async function gerarParecerProjetoPDFBuffer(
     doc.fillColor(BRAND_GREEN_DARK).font("Helvetica-Bold").text("Resultado Consolidado", doc.page.margins.left + 12, resultTop + 12);
     doc.font("Helvetica").fillColor("#1E293B");
     doc.text(`Nota final: ${Number(res.nota_final ?? 0).toFixed(2)}`, doc.page.margins.left + 12, resultTop + 36, { lineGap: 2 });
-    doc.text(`Status: ${res.status_final ?? "-"}`, { lineGap: 2 });
+    doc.text(`Status: ${getStatusLabel(String(res.status_final ?? "-"))}`, { lineGap: 2 });
     doc.text(`Posicao geral: ${res.posicao_geral ?? "-"}`, { lineGap: 2 });
     doc.moveDown(1.8);
   }
