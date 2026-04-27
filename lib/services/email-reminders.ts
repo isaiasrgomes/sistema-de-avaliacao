@@ -17,7 +17,22 @@ export type RecuperacaoSenhaEmail = {
 };
 
 function getSiteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") || "";
+  const direct =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.SITE_URL?.trim() ||
+    process.env.NEXTAUTH_URL?.trim() ||
+    process.env.AUTH_URL?.trim() ||
+    "";
+  if (direct) return direct.replace(/\/+$/, "");
+
+  const vercelHost =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() ||
+    process.env.VERCEL_URL?.trim() ||
+    "";
+  if (!vercelHost) return "";
+
+  const host = vercelHost.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  return host ? `https://${host}` : "";
 }
 
 function toAbsoluteUrlOrEmpty(url?: string | null) {
@@ -189,15 +204,29 @@ export async function enviarCredenciaisAvaliadorResend(
     subtitulo: "Seu acesso já está liberado.",
     conteudoHtml: `
       <p>Olá, <strong>${escapeHtml(destinatario.nome)}</strong>.</p>
-      <p>Seu cadastro foi realizado e já está liberado para acesso.</p>
+      <p>Seu cadastro na plataforma foi aprovado e seu acesso já está liberado.</p>
+      <p>Use os dados abaixo no primeiro acesso:</p>
       <div style="margin:14px 0;padding:12px;border-radius:10px;background:#f1f5f9;border:1px solid #cbd5e1">
         <p style="margin:0 0 8px 0"><strong>E-mail:</strong> ${escapeHtml(destinatario.email)}</p>
         <p style="margin:0"><strong>Senha:</strong> ${escapeHtml(destinatario.senha)}</p>
       </div>
+      <p style="margin:0 0 10px 0">
+        Recomendamos alterar sua senha logo após entrar no sistema para manter sua conta segura.
+      </p>
       ${
         loginUrl
           ? `<p><a href="${escapeHtml(loginUrl)}" style="display:inline-block;padding:10px 14px;background:#166534;color:#fff;text-decoration:none;border-radius:8px">Acessar plataforma</a></p>`
           : ""
+      }
+      ${
+        loginUrl
+          ? `<p style="font-size:12px;color:#64748b;margin-top:8px">
+               Se o botão não funcionar, copie e cole este link no navegador:<br />
+               <a href="${escapeHtml(loginUrl)}">${escapeHtml(loginUrl)}</a>
+             </p>`
+          : `<p style="font-size:12px;color:#64748b;margin-top:8px">
+               Não foi possível montar automaticamente o link da plataforma. Entre em contato com o suporte para receber o endereço de acesso.
+             </p>`
       }
       ${
         resetPasswordHelpUrl
