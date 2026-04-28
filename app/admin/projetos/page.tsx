@@ -1,6 +1,10 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { ProjetosClient } from "./projetos-client";
 
+function normalizeId(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
 export default async function AdminProjetosPage() {
   const supabase = await createServerSupabase();
   const { data: projetos } = await supabase.from("projetos").select("*").order("timestamp_submissao", { ascending: false });
@@ -10,6 +14,7 @@ export default async function AdminProjetosPage() {
   const qtdAvaliadoresByProjetoId = new Map<string, number>();
   const atribuicoesByAvaliador = new Map<string, number>();
   const finalizadasByAvaliador = new Map<string, number>();
+  const avaliadoresByProjetoId = new Map<string, Set<string>>();
 
   if (projetoIds.length > 0) {
     const { data: atribs } = await supabase
@@ -19,30 +24,40 @@ export default async function AdminProjetosPage() {
       .order("id", { ascending: true });
 
     for (const a of atribs ?? []) {
-      const atual = qtdAvaliadoresByProjetoId.get(a.projeto_id) ?? 0;
-      qtdAvaliadoresByProjetoId.set(a.projeto_id, atual + 1);
+      const projetoId = normalizeId(a.projeto_id);
+      const avaliadorId = normalizeId(a.avaliador_id);
+      if (!projetoId || !avaliadorId) continue;
 
-      const atualAtrib = atribuicoesByAvaliador.get(a.avaliador_id) ?? 0;
-      atribuicoesByAvaliador.set(a.avaliador_id, atualAtrib + 1);
+      const atual = qtdAvaliadoresByProjetoId.get(projetoId) ?? 0;
+      qtdAvaliadoresByProjetoId.set(projetoId, atual + 1);
+      const idsProjeto = avaliadoresByProjetoId.get(projetoId) ?? new Set<string>();
+      idsProjeto.add(avaliadorId);
+      avaliadoresByProjetoId.set(projetoId, idsProjeto);
+
+      const atualAtrib = atribuicoesByAvaliador.get(avaliadorId) ?? 0;
+      atribuicoesByAvaliador.set(avaliadorId, atualAtrib + 1);
 
       if (a.status === "CONCLUIDA") {
-        const atualFin = finalizadasByAvaliador.get(a.avaliador_id) ?? 0;
-        finalizadasByAvaliador.set(a.avaliador_id, atualFin + 1);
+        const atualFin = finalizadasByAvaliador.get(avaliadorId) ?? 0;
+        finalizadasByAvaliador.set(avaliadorId, atualFin + 1);
       }
     }
   }
 
   const projetosEnriquecidos = (projetos ?? []).map((p) => ({
     ...p,
-    qtd_avaliadores_atual: qtdAvaliadoresByProjetoId.get(p.id) ?? 0,
+    qtd_avaliadores_atual: qtdAvaliadoresByProjetoId.get(normalizeId(p.id)) ?? 0,
   }));
   const avaliadoresResumo = (avaliadores ?? []).map((a) => ({
-    id: a.id,
+    id: normalizeId(a.id),
     nome: a.nome,
     email: a.email,
-    qtd_atribuidos: atribuicoesByAvaliador.get(a.id) ?? 0,
-    qtd_avaliados: finalizadasByAvaliador.get(a.id) ?? 0,
+    qtd_atribuidos: atribuicoesByAvaliador.get(normalizeId(a.id)) ?? 0,
+    qtd_avaliados: finalizadasByAvaliador.get(normalizeId(a.id)) ?? 0,
   }));
+  const avaliadoresPorProjeto = Object.fromEntries(
+    Array.from(avaliadoresByProjetoId.entries()).map(([projetoId, avaliadorIds]) => [projetoId, Array.from(avaliadorIds)])
+  );
 
   return (
     <div className="space-y-5">
@@ -50,7 +65,11 @@ export default async function AdminProjetosPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Projetos - triagem</h1>
         <p className="text-sm text-muted-foreground">Filtre, desclassifique ou reclassifique inscricoes.</p>
       </div>
-      <ProjetosClient initial={projetosEnriquecidos} avaliadoresResumo={avaliadoresResumo} />
+      <ProjetosClient
+        initial={projetosEnriquecidos}
+        avaliadoresResumo={avaliadoresResumo}
+        avaliadoresPorProjeto={avaliadoresPorProjeto}
+      />
     </div>
   );
 }

@@ -24,6 +24,10 @@ type AvaliadorResumo = {
   qtd_atribuidos: number;
 };
 
+function normalizeId(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
 function labelStatus(status: ProjetoStatus) {
   switch (status) {
     case "INSCRITO":
@@ -131,9 +135,11 @@ function SearchableDropdown({
 export function ProjetosClient({
   initial,
   avaliadoresResumo,
+  avaliadoresPorProjeto,
 }: {
   initial: ProjetoComAvaliadores[];
   avaliadoresResumo: AvaliadorResumo[];
+  avaliadoresPorProjeto: Record<string, string[]>;
 }) {
   const [municipio, setMunicipio] = useState("");
   const [fase, setFase] = useState<ProjetoFase | "">("");
@@ -194,6 +200,11 @@ export function ProjetosClient({
     if (!q) return avaliadoresResumo;
     return avaliadoresResumo.filter((a) => `${a.nome} ${a.email}`.toLowerCase().includes(q));
   }, [avaliadoresResumo, buscaAvaliador]);
+  const avaliadoresJaAtribuidos = useMemo(() => {
+    const projetoId = normalizeId(projetoParaAdicionar?.id);
+    if (!projetoId) return new Set<string>();
+    return new Set((avaliadoresPorProjeto[projetoId] ?? []).map((id) => normalizeId(id)));
+  }, [avaliadoresPorProjeto, projetoParaAdicionar?.id]);
 
   return (
     <div className="space-y-4">
@@ -341,7 +352,7 @@ export function ProjetosClient({
           if (!open) setProjetoParaAdicionar(null);
         }}
       >
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-h-[90vh] w-[95vw] max-w-5xl overflow-hidden">
           <DialogHeader>
             <DialogTitle>Adicionar avaliador ao projeto</DialogTitle>
           </DialogHeader>
@@ -353,8 +364,8 @@ export function ProjetosClient({
             value={buscaAvaliador}
             onChange={(e) => setBuscaAvaliador(e.target.value)}
           />
-          <div className="max-h-80 overflow-auto rounded-md border border-border/70">
-            <Table>
+          <div className="max-h-[55vh] overflow-y-auto overflow-x-auto rounded-md border border-border/70">
+            <Table className="min-w-[760px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
@@ -372,14 +383,24 @@ export function ProjetosClient({
                     <TableCell className="text-right tabular-nums">{a.qtd_avaliados}</TableCell>
                     <TableCell className="text-right tabular-nums">{a.qtd_atribuidos}</TableCell>
                     <TableCell className="text-right">
+                      {(() => {
+                        const avaliadorId = normalizeId(a.id);
+                        const jaAtribuido = avaliadoresJaAtribuidos.has(avaliadorId);
+                        return (
                       <Button
                         type="button"
                         size="sm"
-                        variant={avaliadorSelecionado === a.id ? "default" : "outline"}
-                        onClick={() => setAvaliadorSelecionado(a.id)}
+                        disabled={jaAtribuido}
+                        variant={avaliadorSelecionado === avaliadorId ? "default" : "outline"}
+                        onClick={() => {
+                          if (jaAtribuido) return;
+                          setAvaliadorSelecionado(avaliadorId);
+                        }}
                       >
-                        {avaliadorSelecionado === a.id ? "Selecionado" : "Selecionar"}
+                        {jaAtribuido ? "Já atribuído" : avaliadorSelecionado === avaliadorId ? "Selecionado" : "Selecionar"}
                       </Button>
+                        );
+                      })()}
                     </TableCell>
                   </TableRow>
                 ))}
