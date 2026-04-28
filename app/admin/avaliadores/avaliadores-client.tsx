@@ -16,6 +16,8 @@ import {
 } from "@/app/actions/avaliadores-crud";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 type Row = Avaliador & { carga: number };
@@ -37,6 +39,11 @@ export function AvaliadoresClient({
   const [senha, setSenha] = useState("");
   const [inst, setInst] = useState("");
   const [csvText, setCsvText] = useState("");
+  const [editando, setEditando] = useState<Row | null>(null);
+  const [editNome, setEditNome] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editInst, setEditInst] = useState("");
+  const [aExcluir, setAExcluir] = useState<Row | null>(null);
 
   function baixarModeloCsv() {
     const modelo =
@@ -272,16 +279,22 @@ export function AvaliadoresClient({
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={async () => {
-                    const nn = prompt("Nome", a.nome) ?? a.nome;
-                    const ee = prompt("E-mail", a.email) ?? a.email;
-                    await actionUpdateAvaliador(a.id, { nome: nn, email: ee, instituicao: a.instituicao ?? undefined });
-                    window.location.reload();
+                  onClick={() => {
+                    setEditando(a);
+                    setEditNome(a.nome);
+                    setEditEmail(a.email);
+                    setEditInst(a.instituicao ?? "");
                   }}
                 >
                   Editar
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => actionDeleteAvaliador(a.id).then(() => window.location.reload())}>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => {
+                    setAExcluir(a);
+                  }}
+                >
                   Excluir
                 </Button>
               </TableCell>
@@ -290,6 +303,93 @@ export function AvaliadoresClient({
         </TableBody>
       </Table>
       </div>
+
+      <Dialog
+        open={!!editando}
+        onOpenChange={(open) => {
+          if (!open) setEditando(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar avaliador</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="edit-nome">Nome</Label>
+              <Input id="edit-nome" value={editNome} onChange={(e) => setEditNome(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-email">E-mail</Label>
+              <Input id="edit-email" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-inst">Instituição</Label>
+              <Input id="edit-inst" value={editInst} onChange={(e) => setEditInst(e.target.value)} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditando(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!editando) return;
+                try {
+                  await actionUpdateAvaliador(editando.id, {
+                    nome: editNome,
+                    email: editEmail,
+                    instituicao: editInst || undefined,
+                  });
+                  toast.success("Avaliador atualizado.");
+                  window.location.reload();
+                } catch (e: unknown) {
+                  toast.error(getUserFriendlyErrorMessage(e, "Não foi possível atualizar o avaliador."));
+                }
+              }}
+            >
+              Salvar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!aExcluir}
+        onOpenChange={(open) => {
+          if (!open) setAExcluir(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar exclusão</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Excluir o avaliador {aExcluir ? `"${aExcluir.nome}"` : ""}? As atribuições desse avaliador podem ficar
+            incompletas e exigir redistribuição.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setAExcluir(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!aExcluir) return;
+                try {
+                  await actionDeleteAvaliador(aExcluir.id);
+                  toast.success("Avaliador excluído.");
+                  window.location.reload();
+                } catch (e: unknown) {
+                  toast.error(getUserFriendlyErrorMessage(e, "Não foi possível excluir o avaliador."));
+                }
+              }}
+            >
+              Excluir avaliador
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

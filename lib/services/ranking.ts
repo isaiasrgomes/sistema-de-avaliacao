@@ -20,7 +20,7 @@ function compareDesempate(a: LinhaRanking, b: LinhaRanking): number {
   return new Date(a.projeto.timestamp_submissao).getTime() - new Date(b.projeto.timestamp_submissao).getTime();
 }
 
-/** Projetos elegíveis: não desclassificados, com ao menos uma avaliação concluída e sem pendência de 3º */
+/** Projetos elegíveis: não desclassificados e sem pendência de 3º. */
 export async function montarLinhasRanking(supabase: SupabaseClient): Promise<LinhaRanking[]> {
   const { data: projetos, error: e1 } = await supabase
     .from("projetos")
@@ -37,7 +37,20 @@ export async function montarLinhasRanking(supabase: SupabaseClient): Promise<Lin
       .select("id, status, ordem")
       .eq("projeto_id", p.id);
 
-    if (!atribs?.length) continue;
+    if (p.status === "AGUARDANDO_3O_AVALIADOR") continue;
+
+    if (!atribs?.length) {
+      linhas.push({
+        projeto: p,
+        nota_final: 0,
+        media_equipe: 0,
+        media_mercado: 0,
+        media_produto: 0,
+        media_tecnologia: 0,
+        qtd_avaliacoes: 0,
+      });
+      continue;
+    }
     const { data: avs } = await supabase
       .from("avaliacoes")
       .select("*")
@@ -50,9 +63,18 @@ export async function montarLinhasRanking(supabase: SupabaseClient): Promise<Lin
     const avsConcluidas = (avs ?? []).filter((x) => concluidasIds.includes(x.atribuicao_id));
 
     const n = avsConcluidas.length;
-    if (n < 1) continue;
-
-    if (p.status === "AGUARDANDO_3O_AVALIADOR") continue;
+    if (n < 1) {
+      linhas.push({
+        projeto: p,
+        nota_final: 0,
+        media_equipe: 0,
+        media_mercado: 0,
+        media_produto: 0,
+        media_tecnologia: 0,
+        qtd_avaliacoes: 0,
+      });
+      continue;
+    }
 
     const notasEq = avsConcluidas.map((x) => x.nota_equipe);
     const notasMc = avsConcluidas.map((x) => x.nota_mercado);
