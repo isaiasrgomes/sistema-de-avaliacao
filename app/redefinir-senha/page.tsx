@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,38 @@ export default function RedefinirSenhaPage() {
   const [senha, setSenha] = useState("");
   const [senha2, setSenha2] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sessaoPronta, setSessaoPronta] = useState(false);
+
+  useEffect(() => {
+    const run = async () => {
+      if (typeof window === "undefined") return;
+      const href = window.location.href;
+      const hashIndex = href.indexOf("#");
+      if (hashIndex === -1) {
+        setSessaoPronta(true);
+        return;
+      }
+      const hash = new URLSearchParams(href.slice(hashIndex + 1));
+      const access_token = hash.get("access_token");
+      const refresh_token = hash.get("refresh_token");
+      if (!access_token || !refresh_token) {
+        setSessaoPronta(true);
+        return;
+      }
+      const supabase = createClient();
+      const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+      if (error) {
+        toast.error(getUserFriendlyErrorMessage(error, "Não foi possível validar o link. Solicite um novo e-mail de recuperação."));
+        setSessaoPronta(true);
+        return;
+      }
+      const u = new URL(window.location.href);
+      u.hash = "";
+      window.history.replaceState({}, "", u.pathname + u.search);
+      setSessaoPronta(true);
+    };
+    void run();
+  }, []);
 
   async function salvar() {
     if (senha.length < 6) {
@@ -34,6 +66,14 @@ export default function RedefinirSenhaPage() {
     }
     toast.success("Senha atualizada com sucesso. Faça login novamente.");
     window.location.href = "/login";
+  }
+
+  if (!sessaoPronta) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-2 bg-background p-6 text-center">
+        <p className="text-muted-foreground">Validando o link de recuperação…</p>
+      </div>
+    );
   }
 
   return (

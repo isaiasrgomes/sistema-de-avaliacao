@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { destinoAposLogin } from "@/lib/auth/destino-pos-login";
+import { withAppBasePath } from "@/lib/auth/auth-redirect-url";
 
 export async function GET(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
-      const loginUrl = new URL("/login", url.origin);
+      const loginUrl = new URL(withAppBasePath("/login"), url.origin);
       loginUrl.searchParams.set("error", error.message);
       return NextResponse.redirect(loginUrl, { status: 303 });
     }
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (userErr || !user) {
-    const loginUrl = new URL("/login", url.origin);
+    const loginUrl = new URL(withAppBasePath("/login"), url.origin);
     loginUrl.searchParams.set("error", "Link inválido ou expirado. Peça um novo magic link ou use senha.");
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     .single();
 
   const dest = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, next, profile?.cadastro_recusado);
-  const redirectUrl = new URL(dest, url.origin);
+  const redirectUrl = new URL(withAppBasePath(dest), url.origin);
   const redirectResponse = NextResponse.redirect(redirectUrl, { status: 303 });
   for (const cookie of response.cookies.getAll()) {
     redirectResponse.cookies.set(cookie);

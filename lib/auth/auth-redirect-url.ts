@@ -4,6 +4,10 @@ function normalizeBasePath(basePath: string) {
   return trimmed.startsWith("/") ? trimmed.replace(/\/$/, "") : `/${trimmed.replace(/\/$/, "")}`;
 }
 
+export function getNormalizedBasePath() {
+  return normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH || "");
+}
+
 function resolveOrigin() {
   if (typeof window !== "undefined") {
     // In dev, keep callback on same origin to preserve PKCE verifier storage.
@@ -22,11 +26,23 @@ function resolveOrigin() {
   return "";
 }
 
+/** Caminho absoluto no site (inclui `NEXT_PUBLIC_BASE_PATH` quando existir). */
+export function withAppBasePath(path: string) {
+  const basePath = getNormalizedBasePath();
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${basePath}${p}`;
+}
+
+/** URL absoluta do callback de auth (uso em servidor com origem fixa do deploy). */
+export function buildAuthCallbackUrlWithOrigin(origin: string, next: string) {
+  const o = origin.replace(/\/$/, "");
+  if (!o) return "";
+  const callbackPath = withAppBasePath("/auth/callback");
+  return `${o}${callbackPath}?next=${encodeURIComponent(next)}`;
+}
+
 export function buildAuthCallbackUrl(next: string) {
   const origin = resolveOrigin();
   if (!origin) return "";
-
-  const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH || "");
-  const callbackPath = `${basePath}/auth/confirm`;
-  return `${origin}${callbackPath}?next=${encodeURIComponent(next)}`;
+  return buildAuthCallbackUrlWithOrigin(origin, next);
 }

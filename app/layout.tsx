@@ -4,6 +4,7 @@ import { AppToaster } from "@/components/app-toaster";
 import { SessionIdleTimeout } from "@/components/session-idle-timeout";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { RootAuthHashRedirect } from "@/components/root-auth-hash-redirect";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -22,8 +23,9 @@ export default function RootLayout({
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${inter.variable} min-h-screen font-sans antialiased`}>
         <ThemeProvider>
+          <RootAuthHashRedirect />
           <SessionIdleTimeout />
-          <div className="fixed right-4 top-4 z-[100]">
+          <div className="fixed bottom-4 right-4 z-[100] pb-[env(safe-area-inset-bottom,0px)]">
             <ThemeToggle />
           </div>
           {children}

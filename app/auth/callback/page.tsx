@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { destinoAposLogin } from "@/lib/auth/destino-pos-login";
+import { withAppBasePath } from "@/lib/auth/auth-redirect-url";
 import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 function AuthCallbackInner() {
@@ -35,7 +36,7 @@ function AuthCallbackInner() {
       const code = url.searchParams.get("code");
 
       if (code) {
-        const confirmUrl = new URL("/auth/confirm", url.origin);
+        const confirmUrl = new URL(withAppBasePath("/auth/confirm"), url.origin);
         for (const [key, value] of url.searchParams.entries()) {
           confirmUrl.searchParams.set(key, value);
         }
@@ -77,7 +78,7 @@ function AuthCallbackInner() {
         .eq("id", user.id)
         .single();
       const dest = destinoAposLogin(profile?.role, profile?.cadastro_aprovado, next, profile?.cadastro_recusado);
-      window.location.replace(dest);
+      window.location.replace(new URL(withAppBasePath(dest), url.origin).toString());
     };
 
     void run();

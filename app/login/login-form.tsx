@@ -114,11 +114,17 @@ export function LoginForm() {
                   <Label htmlFor="password">Senha (opcional)</Label>
                   <Input id="password" type="password" autoComplete="current-password" placeholder="••••••••" />
                 </div>
-                <Button type="button" className="w-full" disabled={loading || !email} onClick={magicLink}>
-                  Enviar magic link
-                </Button>
-                <Button variant="secondary" className="w-full" type="submit" disabled={loading || !email}>
+                <Button className="w-full" type="submit" disabled={loading || !email}>
                   Entrar com senha
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={loading || !email}
+                  onClick={magicLink}
+                >
+                  Receber link de acesso por email
                 </Button>
                 <Button variant="ghost" className="w-full" type="button" disabled={loading || !email} onClick={recuperarSenha}>
                   Esqueci minha senha
