@@ -15,12 +15,15 @@ export default async function AvaliadoresPage() {
 
   const comCarga = await Promise.all(
     (avaliadores ?? []).map(async (a) => {
-      const { count } = await supabase
-        .from("atribuicoes")
-        .select("*", { count: "exact", head: true })
-        .eq("avaliador_id", a.id)
-        .in("status", ["PENDENTE", "EM_ANDAMENTO", "CONCLUIDA"]);
-      return { ...a, carga: count ?? 0 };
+      const [{ count }, { count: countFinalizadas }] = await Promise.all([
+        supabase
+          .from("atribuicoes")
+          .select("*", { count: "exact", head: true })
+          .eq("avaliador_id", a.id)
+          .in("status", ["PENDENTE", "EM_ANDAMENTO", "CONCLUIDA"]),
+        supabase.from("atribuicoes").select("*", { count: "exact", head: true }).eq("avaliador_id", a.id).eq("status", "CONCLUIDA"),
+      ]);
+      return { ...a, carga: count ?? 0, avaliacoes_finalizadas: countFinalizadas ?? 0 };
     })
   );
   const integrations = {

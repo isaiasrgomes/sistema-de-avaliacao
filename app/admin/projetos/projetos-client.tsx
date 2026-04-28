@@ -10,11 +10,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { actionDesclassificar, actionReclassificar } from "@/app/actions/admin";
+import { actionAtribuirTerceiro, actionDesclassificar, actionReclassificar } from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Check, ChevronDown } from "lucide-react";
 
 type ProjetoComAvaliadores = Projeto & { qtd_avaliadores_atual?: number | null };
+type ProjetoStatusFiltro = ProjetoStatus | "AVALIACAO_PENDENTE" | "";
+type AvaliadorResumo = {
+  id: string;
+  nome: string;
+  email: string;
+  qtd_avaliados: number;
+  qtd_atribuidos: number;
+};
 
 function labelStatus(status: ProjetoStatus) {
   switch (status) {
@@ -120,12 +128,21 @@ function SearchableDropdown({
   );
 }
 
-export function ProjetosClient({ initial }: { initial: ProjetoComAvaliadores[] }) {
+export function ProjetosClient({
+  initial,
+  avaliadoresResumo,
+}: {
+  initial: ProjetoComAvaliadores[];
+  avaliadoresResumo: AvaliadorResumo[];
+}) {
   const [municipio, setMunicipio] = useState("");
   const [fase, setFase] = useState<ProjetoFase | "">("");
-  const [status, setStatus] = useState<ProjetoStatus | "">("");
+  const [status, setStatus] = useState<ProjetoStatusFiltro>("");
   const [motivo, setMotivo] = useState("");
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [projetoParaAdicionar, setProjetoParaAdicionar] = useState<ProjetoComAvaliadores | null>(null);
+  const [avaliadorSelecionado, setAvaliadorSelecionado] = useState<string>("");
+  const [buscaAvaliador, setBuscaAvaliador] = useState("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -150,6 +167,7 @@ export function ProjetosClient({ initial }: { initial: ProjetoComAvaliadores[] }
   ];
   const statusOptions: SearchableOption[] = [
     { value: "INSCRITO", label: "Inscrito", search: "inscrito" },
+    { value: "AVALIACAO_PENDENTE", label: "Avaliação pendente", search: "avaliacao pendente avaliação pendente" },
     { value: "DESCLASSIFICADO", label: "Desclassificado", search: "desclassificado" },
     { value: "EM_AVALIACAO", label: "Em Avaliação", search: "em avaliacao em avaliação" },
     { value: "AGUARDANDO_3O_AVALIADOR", label: "Aguardando 3º avaliador", search: "aguardando 3 avaliador" },
@@ -163,10 +181,19 @@ export function ProjetosClient({ initial }: { initial: ProjetoComAvaliadores[] }
     return initial.filter((p) => {
       if (municipio && p.municipio !== municipio) return false;
       if (fase && p.fase !== fase) return false;
-      if (status && p.status !== status) return false;
+      if (status === "AVALIACAO_PENDENTE") {
+        const qtd = p.qtd_avaliadores_atual ?? 0;
+        if (!(qtd > 0 && qtd < 2)) return false;
+      } else if (status && p.status !== status) return false;
       return true;
     });
   }, [initial, municipio, fase, status]);
+
+  const avaliadoresFiltrados = useMemo(() => {
+    const q = buscaAvaliador.trim().toLowerCase();
+    if (!q) return avaliadoresResumo;
+    return avaliadoresResumo.filter((a) => `${a.nome} ${a.email}`.toLowerCase().includes(q));
+  }, [avaliadoresResumo, buscaAvaliador]);
 
   return (
     <div className="space-y-4">
@@ -190,7 +217,7 @@ export function ProjetosClient({ initial }: { initial: ProjetoComAvaliadores[] }
         <SearchableDropdown
           label="Status"
           value={status}
-          onChange={(v) => setStatus(v as ProjetoStatus | "")}
+          onChange={(v) => setStatus(v as ProjetoStatusFiltro)}
           options={statusOptions}
           placeholder="Status (todos)"
           emptyText="Nenhum status encontrado."
@@ -250,6 +277,17 @@ export function ProjetosClient({ initial }: { initial: ProjetoComAvaliadores[] }
                 <Button asChild variant="outline" size="sm">
                   <Link href={`/admin/projetos/${p.id}`}>Detalhes</Link>
                 </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setProjetoParaAdicionar(p);
+                    setAvaliadorSelecionado("");
+                    setBuscaAvaliador("");
+                  }}
+                >
+                  Adicionar avaliador
+                </Button>
                 {p.status !== "DESCLASSIFICADO" ? (
                   <Dialog>
                     <DialogTrigger asChild>
@@ -296,6 +334,81 @@ export function ProjetosClient({ initial }: { initial: ProjetoComAvaliadores[] }
         </TableBody>
       </Table>
       </div>
+
+      <Dialog
+        open={!!projetoParaAdicionar}
+        onOpenChange={(open) => {
+          if (!open) setProjetoParaAdicionar(null);
+        }}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Adicionar avaliador ao projeto</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Projeto: <strong>{projetoParaAdicionar?.nome_projeto}</strong>
+          </p>
+          <Input
+            placeholder="Pesquisar avaliador por nome ou e-mail..."
+            value={buscaAvaliador}
+            onChange={(e) => setBuscaAvaliador(e.target.value)}
+          />
+          <div className="max-h-80 overflow-auto rounded-md border border-border/70">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>E-mail</TableHead>
+                  <TableHead className="text-right">Avaliações finalizadas</TableHead>
+                  <TableHead className="text-right">Atribuídos</TableHead>
+                  <TableHead className="text-right">Selecionar</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {avaliadoresFiltrados.map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell>{a.nome}</TableCell>
+                    <TableCell>{a.email}</TableCell>
+                    <TableCell className="text-right tabular-nums">{a.qtd_avaliados}</TableCell>
+                    <TableCell className="text-right tabular-nums">{a.qtd_atribuidos}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={avaliadorSelecionado === a.id ? "default" : "outline"}
+                        onClick={() => setAvaliadorSelecionado(a.id)}
+                      >
+                        {avaliadorSelecionado === a.id ? "Selecionado" : "Selecionar"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setProjetoParaAdicionar(null)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!projetoParaAdicionar?.id || !avaliadorSelecionado}
+              onClick={async () => {
+                if (!projetoParaAdicionar?.id || !avaliadorSelecionado) return;
+                try {
+                  await actionAtribuirTerceiro(projetoParaAdicionar.id, avaliadorSelecionado);
+                  toast.success("Avaliador adicionado ao projeto.");
+                  window.location.reload();
+                } catch (e: unknown) {
+                  const msg = e instanceof Error ? e.message : "Não foi possível adicionar avaliador.";
+                  toast.error(msg);
+                }
+              }}
+            >
+              Confirmar adição
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

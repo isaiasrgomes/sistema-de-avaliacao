@@ -32,7 +32,6 @@ export async function actionCreateAvaliador(input: {
   if (!nome || !email) throw new Error("Informe nome e e-mail.");
 
   const senha = input.senha?.trim() || gerarSenhaAleatoria(10);
-  const generatedPassword = !input.senha?.trim();
   if (senha.length < 6) throw new Error("A senha deve ter ao menos 6 caracteres.");
 
   const { data: created, error: createErr } = await admin.auth.admin.createUser({
@@ -70,13 +69,11 @@ export async function actionCreateAvaliador(input: {
   if (error) throw new Error("Não foi possível salvar os dados do avaliador.");
 
   let avisoCredenciais: string | null = null;
-  if (generatedPassword) {
-    const { data: cfg } = await supabase.from("app_config").select("programa_nome").eq("id", 1).maybeSingle();
-    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? ""}/login`;
-    const sent = await enviarCredenciaisAvaliadorResend({ nome, email, senha }, { programaNome: cfg?.programa_nome, loginUrl });
-    if (!sent.ok) {
-      avisoCredenciais = `Avaliador criado, mas o e-mail de credenciais não foi enviado. Senha temporária: ${senha}. Motivo (Resend): ${sent.erro}`;
-    }
+  const { data: cfg } = await supabase.from("app_config").select("programa_nome").eq("id", 1).maybeSingle();
+  const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? ""}/login`;
+  const sent = await enviarCredenciaisAvaliadorResend({ nome, email, senha }, { programaNome: cfg?.programa_nome, loginUrl });
+  if (!sent.ok) {
+    avisoCredenciais = `Avaliador criado, mas o e-mail de credenciais não foi enviado. Senha definida: ${senha}. Motivo (Resend): ${sent.erro}`;
   }
 
   await logAuditoria(supabase, {
@@ -84,7 +81,7 @@ export async function actionCreateAvaliador(input: {
     acao: "CADASTRO_AVALIADOR",
     entidade: "avaliadores",
     entidade_id: authId,
-    detalhes: { email, generatedPassword },
+    detalhes: { email, senhaInformadaManualmente: Boolean(input.senha?.trim()) },
   });
   revalidatePath("/admin/avaliadores");
   return { ok: true, avisoCredenciais };

@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
-type Row = Avaliador & { carga: number };
+type Row = Avaliador & { carga: number; avaliacoes_finalizadas: number };
 
 type Pendente = { id: string; nome: string; email: string | null; criado_em: string };
 type Integrations = { supabaseAdmin: boolean; resend: boolean };
@@ -259,6 +259,7 @@ export function AvaliadoresClient({
             <TableHead>Nome</TableHead>
             <TableHead>E-mail</TableHead>
             <TableHead>Carga</TableHead>
+            <TableHead>Avaliações finalizadas</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
@@ -269,6 +270,7 @@ export function AvaliadoresClient({
               <TableCell>{a.nome}</TableCell>
               <TableCell>{a.email}</TableCell>
               <TableCell>{a.carga}</TableCell>
+              <TableCell>{a.avaliacoes_finalizadas}</TableCell>
               <TableCell>
                 <Badge variant={a.ativo ? "default" : "secondary"}>{a.ativo ? "Ativo" : "Inativo"}</Badge>
               </TableCell>
