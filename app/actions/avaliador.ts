@@ -56,10 +56,8 @@ export async function actionEnviarAvaliacao(input: {
   }
 
   const { data: exist } = await supabase.from("avaliacoes").select("id").eq("atribuicao_id", input.atribuicaoId).maybeSingle();
-  if (exist) throw new Error("Avaliação já enviada.");
 
-  const { error: e1 } = await supabase.from("avaliacoes").insert({
-    atribuicao_id: input.atribuicaoId,
+  const payload = {
     nota_equipe: input.nota_equipe,
     nota_mercado: input.nota_mercado,
     nota_produto: input.nota_produto,
@@ -67,8 +65,18 @@ export async function actionEnviarAvaliacao(input: {
     justificativa_geral: justificativa || null,
     observacoes_gerais: input.observacoes_gerais || null,
     nota_total_ponderada: 0,
-  });
-  if (e1) throw new Error(getUserFriendlyErrorMessage(e1, "Não foi possível salvar sua avaliação."));
+  };
+
+  if (exist) {
+    const { error: eUpdate } = await supabase.from("avaliacoes").update(payload).eq("id", exist.id);
+    if (eUpdate) throw new Error(getUserFriendlyErrorMessage(eUpdate, "Não foi possível atualizar sua avaliação."));
+  } else {
+    const { error: eInsert } = await supabase.from("avaliacoes").insert({
+      atribuicao_id: input.atribuicaoId,
+      ...payload,
+    });
+    if (eInsert) throw new Error(getUserFriendlyErrorMessage(eInsert, "Não foi possível salvar sua avaliação."));
+  }
 
   await supabase
     .from("atribuicoes")
@@ -79,13 +87,14 @@ export async function actionEnviarAvaliacao(input: {
 
   await logAuditoria(supabase, {
     usuario_id: user.id,
-    acao: "ENVIO_AVALIACAO",
+    acao: exist ? "ATUALIZACAO_AVALIACAO" : "ENVIO_AVALIACAO",
     entidade: "avaliacoes",
-    entidade_id: input.atribuicaoId,
+    entidade_id: exist?.id ?? input.atribuicaoId,
   });
 
   revalidatePath("/avaliador");
   revalidatePath(`/avaliador/projeto/${input.projetoId}`);
+  return { updated: !!exist };
 }
 
 export async function actionDeclararImpedimento(

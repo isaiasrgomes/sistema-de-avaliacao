@@ -119,7 +119,7 @@ export function ProjetosAvaliadorClient({
                     ) : (
                       <Button asChild size="sm">
                         <Link prefetch href={`/avaliador/projeto/${a.projeto_id}/avaliar?atribuicao=${a.id}`}>
-                          Avaliar
+                          {a.status === "CONCLUIDA" ? "Editar avaliação" : "Avaliar"}
                         </Link>
                       </Button>
                     )}

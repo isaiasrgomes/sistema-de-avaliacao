@@ -117,7 +117,7 @@ export function AvaliacaoForm({
 
   if (!atribuicaoId) return <p className="text-destructive">Abra o projeto pela lista (link com atribuição).</p>;
 
-  if (motivoBloqueioPrazo) {
+  if (motivoBloqueioPrazo && !readOnly) {
     return (
       <div className="space-y-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
         <p className="font-medium text-foreground">Período de avaliações</p>
@@ -159,13 +159,13 @@ export function AvaliacaoForm({
       className="space-y-4 rounded-lg border bg-card p-4"
       onSubmit={form.handleSubmit(async (data) => {
         try {
-          await actionEnviarAvaliacao({
+          const result = await actionEnviarAvaliacao({
             projetoId,
             atribuicaoId,
             ...data,
             observacoes_gerais: data.observacoes_gerais ?? "",
           });
-          toast.success("Avaliação enviada");
+          toast.success(result.updated ? "Avaliação atualizada" : "Avaliação enviada");
           router.push("/avaliador");
           router.refresh();
         } catch (e: unknown) {
@@ -234,7 +234,7 @@ export function AvaliacaoForm({
         <Textarea rows={3} {...form.register("observacoes_gerais")} />
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button type="submit">Enviar avaliação</Button>
+        <Button type="submit">{initial ? "Atualizar avaliação" : "Enviar avaliação"}</Button>
         <Dialog open={impOpen} onOpenChange={setImpOpen}>
           <DialogTrigger asChild>
             <Button type="button" variant="destructive">

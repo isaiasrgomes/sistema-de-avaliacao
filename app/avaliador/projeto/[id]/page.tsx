@@ -29,11 +29,15 @@ export default async function AvaliadorProjetoPage({
 }) {
   const supabase = await createServerSupabase();
   const { data: projeto } = await supabase.from("projetos").select("*").eq("id", params.id).single();
+  const { data: avaliacaoExistente } = searchParams.atribuicao
+    ? await supabase.from("avaliacoes").select("id").eq("atribuicao_id", searchParams.atribuicao).maybeSingle()
+    : { data: null };
 
   if (!projeto) return <p>Projeto não encontrado.</p>;
   const avaliarHref = searchParams.atribuicao
     ? `/avaliador/projeto/${projeto.id}/avaliar?atribuicao=${searchParams.atribuicao}`
     : `/avaliador/projeto/${projeto.id}/avaliar`;
+  const rotuloBotaoAvaliacao = avaliacaoExistente ? "Editar avaliação" : "Avaliar";
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -46,7 +50,7 @@ export default async function AvaliadorProjetoPage({
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild size="sm">
-            <Link href={avaliarHref}>Avaliar</Link>
+            <Link href={avaliarHref}>{rotuloBotaoAvaliacao}</Link>
           </Button>
           <Button asChild size="sm" variant="outline">
             <Link href="/avaliador">Voltar para lista</Link>

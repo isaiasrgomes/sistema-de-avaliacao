@@ -45,6 +45,8 @@ export default async function AvaliarProjetoPage({
     .eq("id", 1)
     .maybeSingle();
   const prazoEnvio = cfgPrazo ? podeEnviarAvaliacaoAgora(cfgPrazo) : { ok: true as const };
+  const possuiAvaliacao = !!exist;
+  const somenteLeitura = possuiAvaliacao && !prazoEnvio.ok;
 
   if (!projeto) return <p>Projeto não encontrado.</p>;
   const visualizarHref = atribId ? `/avaliador/projeto/${projeto.id}?atribuicao=${atribId}` : `/avaliador/projeto/${projeto.id}`;
@@ -85,8 +87,8 @@ export default async function AvaliarProjetoPage({
       <AvaliacaoForm
         projetoId={projeto.id}
         atribuicaoId={atrib?.id ?? ""}
-        readOnly={!!exist || atrib?.status === "CONCLUIDA"}
-        motivoBloqueioPrazo={!prazoEnvio.ok ? prazoEnvio.motivo : undefined}
+        readOnly={somenteLeitura}
+        motivoBloqueioPrazo={!prazoEnvio.ok && !possuiAvaliacao ? prazoEnvio.motivo : undefined}
         initial={exist ?? undefined}
       />
     </div>
