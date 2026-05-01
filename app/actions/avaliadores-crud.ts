@@ -70,8 +70,7 @@ export async function actionCreateAvaliador(input: {
 
   let avisoCredenciais: string | null = null;
   const { data: cfg } = await supabase.from("app_config").select("programa_nome").eq("id", 1).maybeSingle();
-  const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? ""}/login`;
-  const sent = await enviarCredenciaisAvaliadorResend({ nome, email, senha }, { programaNome: cfg?.programa_nome, loginUrl });
+  const sent = await enviarCredenciaisAvaliadorResend({ nome, email, senha }, { programaNome: cfg?.programa_nome });
   if (!sent.ok) {
     avisoCredenciais = `Avaliador criado, mas o e-mail de credenciais não foi enviado. Senha definida: ${senha}. Motivo (Resend): ${sent.erro}`;
   }
@@ -135,7 +134,6 @@ export async function actionImportarAvaliadoresCSV(csvText: string) {
   let ignorados = 0;
   const erros: string[] = [];
   const { data: cfg } = await supabase.from("app_config").select("programa_nome").eq("id", 1).maybeSingle();
-  const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? ""}/login`;
 
   for (const [idx, row] of parsed.data.entries()) {
     const { nome, email } = extrairNomeEmail(row);
@@ -210,7 +208,7 @@ export async function actionImportarAvaliadoresCSV(csvText: string) {
     } else {
       const sent = await enviarCredenciaisAvaliadorResend(
         { nome, email, senha },
-        { programaNome: cfg?.programa_nome, loginUrl }
+        { programaNome: cfg?.programa_nome }
       );
       if (!sent.ok) {
         erros.push(`Linha ${idx + 2} (${email}): criado, mas e-mail não enviado (${sent.erro}).`);

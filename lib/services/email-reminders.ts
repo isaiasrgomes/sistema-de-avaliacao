@@ -18,10 +18,10 @@ export type RecuperacaoSenhaEmail = {
 
 function getSiteUrl() {
   const direct =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     process.env.SITE_URL?.trim() ||
     process.env.NEXTAUTH_URL?.trim() ||
     process.env.AUTH_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     "";
   if (direct) return direct.replace(/\/+$/, "");
 
