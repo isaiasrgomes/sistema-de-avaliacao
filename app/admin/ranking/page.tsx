@@ -3,6 +3,7 @@ import { RankingClient } from "./ranking-client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getStatusLabel } from "@/lib/utils/status";
 import { Badge } from "@/components/ui/badge";
+import { mediaNotasTotaisProjeto, qtdNotasEDispersaoParPrincipal } from "@/lib/services/nota";
 
 function statusBadgeClass(status: string) {
   switch (status) {
@@ -26,51 +27,39 @@ export default async function RankingPage() {
     .order("posicao_geral", { ascending: true, nullsFirst: false });
 
   const projetoIds = (rows ?? []).map((r) => r.projeto_id).filter(Boolean);
-  const statsByProjetoId = new Map<string, { qtdNotas: number; cvPct: number | null }>();
+  const statsByProjetoId = new Map<string, { qtdNotas: number; cvPct: number | null; mediaNotaFinal: number | null }>();
 
   if (projetoIds.length > 0) {
     const { data: atribs } = await supabase
       .from("atribuicoes")
-      .select("id, projeto_id, status")
+      .select("id, projeto_id, status, ordem")
       .in("projeto_id", projetoIds);
 
-    const concluidas = (atribs ?? []).filter((a) => a.status === "CONCLUIDA");
-    const atribuicaoIds = concluidas.map((a) => a.id);
-    const atribuicaoToProjeto = new Map<string, string>();
-    for (const a of concluidas) atribuicaoToProjeto.set(a.id, a.projeto_id);
+    const atribsByProjeto = new Map<string, { id: string; ordem: number; status: string }[]>();
+    for (const a of atribs ?? []) {
+      const pid = a.projeto_id as string;
+      const arr = atribsByProjeto.get(pid) ?? [];
+      arr.push({ id: a.id, ordem: a.ordem, status: a.status });
+      atribsByProjeto.set(pid, arr);
+    }
 
+    const atribuicaoIds = (atribs ?? []).map((a) => a.id);
+    const notaByAtribId = new Map<string, number>();
     if (atribuicaoIds.length > 0) {
       const { data: avs } = await supabase
         .from("avaliacoes")
         .select("atribuicao_id, nota_total_ponderada")
         .in("atribuicao_id", atribuicaoIds);
-
-      const totalsByProjeto = new Map<string, number[]>();
       for (const av of avs ?? []) {
-        const pid = atribuicaoToProjeto.get(av.atribuicao_id);
-        if (!pid) continue;
-        const arr = totalsByProjeto.get(pid) ?? [];
-        arr.push(Number(av.nota_total_ponderada));
-        totalsByProjeto.set(pid, arr);
+        notaByAtribId.set(av.atribuicao_id, Number(av.nota_total_ponderada));
       }
+    }
 
-      for (const pid of projetoIds) {
-        const totals = totalsByProjeto.get(pid) ?? [];
-        if (totals.length === 0) {
-          statsByProjetoId.set(pid, { qtdNotas: 0, cvPct: null });
-          continue;
-        }
-        if (totals.length === 1) {
-          statsByProjetoId.set(pid, { qtdNotas: 1, cvPct: 0 });
-          continue;
-        }
-
-        const max = Math.max(...totals);
-        const min = Math.min(...totals);
-        const media = totals.reduce((s, v) => s + v, 0) / totals.length;
-        const cvPct = media === 0 ? 0 : ((max - min) / media) * 100;
-        statsByProjetoId.set(pid, { qtdNotas: totals.length, cvPct });
-      }
+    for (const pid of projetoIds) {
+      const list = atribsByProjeto.get(pid) ?? [];
+      const stats = qtdNotasEDispersaoParPrincipal(list, notaByAtribId);
+      const { media: mediaNotaFinal } = mediaNotasTotaisProjeto(list, notaByAtribId);
+      statsByProjetoId.set(pid, { ...stats, mediaNotaFinal });
     }
   }
 
@@ -99,7 +88,12 @@ export default async function RankingPage() {
           <TableBody>
             {(rows ?? []).map((r) => {
               const p = r.projetos as { nome_projeto: string; nome_responsavel: string; municipio: string };
-              const stats = statsByProjetoId.get(r.projeto_id) ?? { qtdNotas: 0, cvPct: null };
+              const stats = statsByProjetoId.get(r.projeto_id) ?? {
+                qtdNotas: 0,
+                cvPct: null,
+                mediaNotaFinal: null,
+              };
+              const notaFinalExibida = stats.mediaNotaFinal ?? Number(r.nota_final);
               return (
                 <TableRow key={r.id}>
                   <TableCell>{r.posicao_geral ?? "—"}</TableCell>
@@ -108,7 +102,7 @@ export default async function RankingPage() {
                   <TableCell>{p?.municipio}</TableCell>
                   <TableCell className="text-right tabular-nums">{stats.qtdNotas || "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">{stats.cvPct === null ? "—" : stats.cvPct.toFixed(2)}</TableCell>
-                  <TableCell>{Number(r.nota_final).toFixed(2)}</TableCell>
+                  <TableCell className="tabular-nums">{notaFinalExibida.toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"

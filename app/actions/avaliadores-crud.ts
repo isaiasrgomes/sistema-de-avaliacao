@@ -252,8 +252,44 @@ export async function actionUpdateAvaliador(
 }
 
 export async function actionDeleteAvaliador(id: string) {
-  const { supabase } = await requireCoord();
-  await supabase.from("avaliadores").delete().eq("id", id);
+  const { supabase, user } = await requireCoord();
+  const emailNorm = (s: string) => s.trim().toLowerCase();
+
+  const { data: row, error: fetchErr } = await supabase.from("avaliadores").select("id, nome, email").eq("id", id).maybeSingle();
+  if (fetchErr) throw new Error(getUserFriendlyErrorMessage(fetchErr, "Não foi possível carregar o avaliador."));
+  if (!row) throw new Error("Avaliador não encontrado.");
+
+  const email = emailNorm(row.email ?? "");
+  let authRemovidos = 0;
+
+  if (email) {
+    const { data: perfis } = await supabase.from("profiles").select("id, role").eq("email", email);
+    const idsAvaliador = (perfis ?? []).filter((p) => p.role === "AVALIADOR").map((p) => p.id);
+    if (idsAvaliador.length) {
+      const admin = createAdminClient();
+      for (const authId of idsAvaliador) {
+        const { error: delAuth } = await admin.auth.admin.deleteUser(authId);
+        if (delAuth) {
+          throw new Error(
+            getUserFriendlyErrorMessage(delAuth, "Não foi possível remover o login deste avaliador no provedor de autenticação.")
+          );
+        }
+        authRemovidos += 1;
+      }
+    }
+  }
+
+  const { error: delAv } = await supabase.from("avaliadores").delete().eq("id", id);
+  if (delAv) throw new Error(getUserFriendlyErrorMessage(delAv, "Não foi possível excluir o registro do avaliador."));
+
+  await logAuditoria(supabase, {
+    usuario_id: user.id,
+    acao: "EXCLUIR_AVALIADOR",
+    entidade: "avaliadores",
+    entidade_id: id,
+    detalhes: { nome: row.nome, email: row.email ?? "", usuarios_auth_removidos: authRemovidos },
+  });
+
   revalidatePath("/admin/avaliadores");
 }
 

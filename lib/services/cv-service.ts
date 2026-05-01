@@ -1,9 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { coeficienteVariacaoDoisValores } from "./nota";
+import { dispersaoRelativaPercentual, notasTotaisParPrincipal } from "./nota";
 
 export interface CvProjetoResult {
   cv: number | null;
   precisaTerceiro: boolean;
+  /** Notas totais do par principal (ordens 1 e 2), quando ambas existem (0–2 itens). */
   totais: number[];
 }
 
@@ -26,18 +27,20 @@ export async function calcularCVProjeto(
     .in("atribuicao_id", ids);
 
   const map = new Map(avaliacoes?.map((x) => [x.atribuicao_id, Number(x.nota_total_ponderada)]) ?? []);
-  const concluidas = atribs.filter((a) => a.status === "CONCLUIDA").sort((x, y) => x.ordem - y.ordem);
-  const totais: number[] = [];
-  for (const a of concluidas) {
-    const n = map.get(a.id);
-    if (n != null) totais.push(n);
-  }
+  const linhas = atribs.map((a) => ({
+    ordem: a.ordem,
+    status: a.status,
+    notaTotal: (() => {
+      const n = map.get(a.id);
+      return n != null && !Number.isNaN(n) ? n : null;
+    })(),
+  }));
 
-  if (totais.length < 2) return { cv: null, precisaTerceiro: false, totais };
-  if (totais.length >= 3) return { cv: null, precisaTerceiro: false, totais };
+  const totaisPar = notasTotaisParPrincipal(linhas);
+  if (totaisPar.length < 2) return { cv: null, precisaTerceiro: false, totais: totaisPar };
 
-  const cv = coeficienteVariacaoDoisValores(totais[0], totais[1]);
-  return { cv, precisaTerceiro: cv >= 30, totais };
+  const cv = dispersaoRelativaPercentual(totaisPar);
+  return { cv, precisaTerceiro: (cv ?? 0) >= 30, totais: totaisPar };
 }
 
 export async function verificarNecessidadeTerceiroAvaliador(

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getStatusLabel } from "@/lib/utils/status";
 import { ProjetoDetalhesSetores } from "@/components/projeto-detalhes-setores";
+import { ProjetoAvaliadoresNotas, type AtribuicaoComAvaliacao } from "@/components/projeto-avaliadores-notas";
 
 function statusBadgeClass(status: string) {
   switch (status) {
@@ -28,6 +29,18 @@ export default async function AdminProjetoDetalhesPage({ params }: { params: { i
 
   if (!projeto) return <p>Projeto não encontrado.</p>;
 
+  const { data: atribuicoesRaw } = await supabase
+    .from("atribuicoes")
+    .select(
+      `id, ordem, status,
+       avaliadores ( nome ),
+       avaliacoes ( nota_total_ponderada, nota_equipe, nota_mercado, nota_produto, nota_tecnologia )`
+    )
+    .eq("projeto_id", projeto.id)
+    .order("ordem", { ascending: true });
+
+  const atribuicoes = (atribuicoesRaw ?? []) as unknown as AtribuicaoComAvaliacao[];
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="space-y-3 rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
@@ -44,6 +57,7 @@ export default async function AdminProjetoDetalhesPage({ params }: { params: { i
         </div>
 
         <div className="space-y-3">
+          {atribuicoes.length > 0 ? <ProjetoAvaliadoresNotas atribuicoes={atribuicoes} /> : null}
           <ProjetoDetalhesSetores projeto={projeto} />
           <p className="text-sm">
             <strong>Vídeo pitch:</strong>{" "}

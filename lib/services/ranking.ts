@@ -59,10 +59,11 @@ export async function montarLinhasRanking(supabase: SupabaseClient): Promise<Lin
         atribs.map((a) => a.id)
       );
 
-    const concluidasIds = atribs.filter((x) => x.status === "CONCLUIDA").map((x) => x.id);
-    const avsConcluidas = (avs ?? []).filter((x) => concluidasIds.includes(x.atribuicao_id));
+    /** Qualquer avaliação gravada conta como nota recebida (independe do status da atribuição). */
+    const atribIds = new Set(atribs.map((a) => a.id));
+    const avsRecebidas = (avs ?? []).filter((x) => atribIds.has(x.atribuicao_id));
 
-    const n = avsConcluidas.length;
+    const n = avsRecebidas.length;
     if (n < 1) {
       linhas.push({
         projeto: p,
@@ -76,11 +77,11 @@ export async function montarLinhasRanking(supabase: SupabaseClient): Promise<Lin
       continue;
     }
 
-    const notasEq = avsConcluidas.map((x) => x.nota_equipe);
-    const notasMc = avsConcluidas.map((x) => x.nota_mercado);
-    const notasPr = avsConcluidas.map((x) => x.nota_produto);
-    const notasTc = avsConcluidas.map((x) => x.nota_tecnologia);
-    const totais = avsConcluidas.map((x) => Number(x.nota_total_ponderada));
+    const notasEq = avsRecebidas.map((x) => x.nota_equipe);
+    const notasMc = avsRecebidas.map((x) => x.nota_mercado);
+    const notasPr = avsRecebidas.map((x) => x.nota_produto);
+    const notasTc = avsRecebidas.map((x) => x.nota_tecnologia);
+    const totais = avsRecebidas.map((x) => Number(x.nota_total_ponderada));
 
     const media = (arr: number[]) => arr.reduce((s, v) => s + v, 0) / arr.length;
 
