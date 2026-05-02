@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { Projeto, ProjetoFase, ProjetoStatus } from "@/lib/types/database";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,7 @@ function SearchableDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -90,10 +91,34 @@ function SearchableDropdown({
 
   const selected = options.find((o) => o.value === value);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (wrapperRef.current && !wrapperRef.current.contains(target)) {
+        setOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <div className="relative">
+      <div ref={wrapperRef} className="relative">
         <Button type="button" variant="outline" className="h-10 w-full justify-between" onClick={() => setOpen((v) => !v)}>
           <span className="truncate text-left">{selected?.label ?? placeholder}</span>
           <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
@@ -144,6 +169,7 @@ export function ProjetosClient({
   avaliadoresResumo: AvaliadorResumo[];
   avaliadoresPorProjeto: Record<string, string[]>;
 }) {
+  const [buscaProjeto, setBuscaProjeto] = useState("");
   const [municipio, setMunicipio] = useState("");
   const [fase, setFase] = useState<ProjetoFase | "">("");
   const [status, setStatus] = useState<ProjetoStatusFiltro>("");
@@ -187,7 +213,8 @@ export function ProjetosClient({
   ];
 
   const filtrados = useMemo(() => {
-    return initial.filter((p) => {
+    const q = buscaProjeto.trim().toLowerCase();
+    const base = initial.filter((p) => {
       if (municipio && p.municipio !== municipio) return false;
       if (fase && p.fase !== fase) return false;
       if (status === "AVALIACAO_PENDENTE") {
@@ -199,7 +226,19 @@ export function ProjetosClient({
       } else if (status && p.status !== status) return false;
       return true;
     });
-  }, [initial, municipio, fase, status]);
+    const porTexto =
+      !q
+        ? base
+        : base.filter((p) => {
+            const nome = (p.nome_projeto ?? "").toLowerCase();
+            const resp = (p.nome_responsavel ?? "").toLowerCase();
+            const mun = (p.municipio ?? "").toLowerCase();
+            return nome.includes(q) || resp.includes(q) || mun.includes(q);
+          });
+    return [...porTexto].sort((a, b) =>
+      (a.nome_projeto ?? "").localeCompare(b.nome_projeto ?? "", "pt-BR", { sensitivity: "base" })
+    );
+  }, [initial, buscaProjeto, municipio, fase, status]);
 
   const avaliadoresFiltrados = useMemo(() => {
     const q = buscaAvaliador.trim().toLowerCase();
@@ -215,6 +254,17 @@ export function ProjetosClient({
   return (
     <div className="space-y-4">
       <div className="grid gap-3 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm md:grid-cols-3">
+        <div className="space-y-2 md:col-span-3">
+          <Label>Pesquisar projetos</Label>
+          <div className="rounded-md border border-border/70 bg-popover p-2 shadow-lg">
+            <Input
+              value={buscaProjeto}
+              onChange={(e) => setBuscaProjeto(e.target.value)}
+              placeholder="Pesquisar por nome do projeto, responsável ou município..."
+              className="h-9"
+            />
+          </div>
+        </div>
         <SearchableDropdown
           label="Município"
           value={municipio}
@@ -239,11 +289,16 @@ export function ProjetosClient({
           placeholder="Status (todos)"
           emptyText="Nenhum status encontrado."
         />
-        <Button variant="outline" onClick={() => {
-          setMunicipio("");
-          setFase("");
-          setStatus("");
-        }} className="md:col-span-3 md:w-fit">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setBuscaProjeto("");
+            setMunicipio("");
+            setFase("");
+            setStatus("");
+          }}
+          className="md:col-span-3 md:w-fit"
+        >
           Limpar filtros
         </Button>
       </div>
