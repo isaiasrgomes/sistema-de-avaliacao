@@ -12,6 +12,7 @@ export default async function AdminProjetosPage() {
 
   const projetoIds = (projetos ?? []).map((p) => p.id).filter(Boolean);
   const qtdAvaliadoresByProjetoId = new Map<string, number>();
+  const qtdAvaliacoesConcluidasByProjetoId = new Map<string, number>();
   const atribuicoesByAvaliador = new Map<string, number>();
   const finalizadasByAvaliador = new Map<string, number>();
   const avaliadoresByProjetoId = new Map<string, Set<string>>();
@@ -40,14 +41,20 @@ export default async function AdminProjetosPage() {
       if (a.status === "CONCLUIDA") {
         const atualFin = finalizadasByAvaliador.get(avaliadorId) ?? 0;
         finalizadasByAvaliador.set(avaliadorId, atualFin + 1);
+        const atualProj = qtdAvaliacoesConcluidasByProjetoId.get(projetoId) ?? 0;
+        qtdAvaliacoesConcluidasByProjetoId.set(projetoId, atualProj + 1);
       }
     }
   }
 
-  const projetosEnriquecidos = (projetos ?? []).map((p) => ({
-    ...p,
-    qtd_avaliadores_atual: qtdAvaliadoresByProjetoId.get(normalizeId(p.id)) ?? 0,
-  }));
+  const projetosEnriquecidos = (projetos ?? []).map((p) => {
+    const pid = normalizeId(p.id);
+    return {
+      ...p,
+      qtd_avaliadores_atual: qtdAvaliadoresByProjetoId.get(pid) ?? 0,
+      qtd_avaliacoes_finalizadas: qtdAvaliacoesConcluidasByProjetoId.get(pid) ?? 0,
+    };
+  });
   const avaliadoresResumo = (avaliadores ?? []).map((a) => ({
     id: normalizeId(a.id),
     nome: a.nome,

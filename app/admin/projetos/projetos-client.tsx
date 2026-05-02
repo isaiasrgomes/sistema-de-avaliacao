@@ -14,7 +14,10 @@ import { actionAtribuirTerceiro, actionDesclassificar, actionReclassificar } fro
 import { toast } from "sonner";
 import { Check, ChevronDown } from "lucide-react";
 
-type ProjetoComAvaliadores = Projeto & { qtd_avaliadores_atual?: number | null };
+type ProjetoComAvaliadores = Projeto & {
+  qtd_avaliadores_atual?: number | null;
+  qtd_avaliacoes_finalizadas?: number | null;
+};
 type ProjetoStatusFiltro = ProjetoStatus | "AVALIACAO_PENDENTE" | "";
 type AvaliadorResumo = {
   id: string;
@@ -188,8 +191,11 @@ export function ProjetosClient({
       if (municipio && p.municipio !== municipio) return false;
       if (fase && p.fase !== fase) return false;
       if (status === "AVALIACAO_PENDENTE") {
-        const qtd = p.qtd_avaliadores_atual ?? 0;
-        if (!(qtd > 0 && qtd < 2)) return false;
+        const atrib = p.qtd_avaliadores_atual ?? 0;
+        const fin = p.qtd_avaliacoes_finalizadas ?? 0;
+        if (atrib <= 0) return false;
+        if (atrib < 2 || fin < atrib) return true;
+        return false;
       } else if (status && p.status !== status) return false;
       return true;
     });
@@ -250,7 +256,7 @@ export function ProjetosClient({
             <TableHead>Município</TableHead>
             <TableHead>Fase</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-center">Avaliadores</TableHead>
+            <TableHead className="text-center">Avaliaram / atrib.</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -266,7 +272,8 @@ export function ProjetosClient({
               <TableCell>{p.municipio}</TableCell>
               <TableCell>{labelFase(p.fase)}</TableCell>
               <TableCell>
-                {(p.qtd_avaliadores_atual ?? 0) > 0 && (p.qtd_avaliadores_atual ?? 0) < 2 ? (
+                {(p.qtd_avaliadores_atual ?? 0) > 0 &&
+                ((p.qtd_avaliadores_atual ?? 0) < 2 || (p.qtd_avaliacoes_finalizadas ?? 0) < (p.qtd_avaliadores_atual ?? 0)) ? (
                   <Badge className="border-red-500/35 bg-red-500/10 text-red-700 dark:border-violet-300/40 dark:bg-violet-300/15 dark:text-violet-200">
                     Avaliação pendente
                   </Badge>
@@ -282,7 +289,7 @@ export function ProjetosClient({
                 )}
               </TableCell>
               <TableCell className="text-center tabular-nums">
-                {p.qtd_avaliadores_atual ?? 0}
+                {p.qtd_avaliacoes_finalizadas ?? 0} / {p.qtd_avaliadores_atual ?? 0}
               </TableCell>
               <TableCell className="text-right space-x-2">
                 <Button asChild variant="outline" size="sm">

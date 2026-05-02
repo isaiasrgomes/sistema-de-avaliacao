@@ -68,8 +68,17 @@ export async function actionEnviarAvaliacao(input: {
   };
 
   if (exist) {
-    const { error: eUpdate } = await supabase.from("avaliacoes").update(payload).eq("id", exist.id);
+    const { data: updatedRows, error: eUpdate } = await supabase
+      .from("avaliacoes")
+      .update(payload)
+      .eq("id", exist.id)
+      .select("id");
     if (eUpdate) throw new Error(getUserFriendlyErrorMessage(eUpdate, "Não foi possível atualizar sua avaliação."));
+    if (!updatedRows?.length) {
+      throw new Error(
+        "A atualização não foi aplicada (permissão ou política de segurança). Peça à coordenação para conferir o banco ou tente novamente."
+      );
+    }
   } else {
     const { error: eInsert } = await supabase.from("avaliacoes").insert({
       atribuicao_id: input.atribuicaoId,

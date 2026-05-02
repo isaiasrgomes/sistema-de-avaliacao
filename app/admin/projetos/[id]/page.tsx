@@ -1,6 +1,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FileDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getStatusLabel } from "@/lib/utils/status";
 import { ProjetoDetalhesSetores } from "@/components/projeto-detalhes-setores";
@@ -34,7 +35,7 @@ export default async function AdminProjetoDetalhesPage({ params }: { params: { i
     .select(
       `id, ordem, status,
        avaliadores ( nome ),
-       avaliacoes ( nota_total_ponderada, nota_equipe, nota_mercado, nota_produto, nota_tecnologia )`
+       avaliacoes ( nota_total_ponderada, nota_equipe, nota_mercado, nota_produto, nota_tecnologia, justificativa_geral, observacoes_gerais )`
     )
     .eq("projeto_id", projeto.id)
     .order("ordem", { ascending: true });
@@ -53,6 +54,14 @@ export default async function AdminProjetoDetalhesPage({ params }: { params: { i
         <div className="flex flex-wrap gap-2">
           <Button asChild size="sm" variant="outline">
             <Link href={`/admin/projetos#${projeto.id}`}>Voltar para lista</Link>
+          </Button>
+          <Button asChild size="sm" variant="secondary">
+            <a href={`/api/relatorios/pdf?tipo=PARECER&projetoId=${encodeURIComponent(projeto.id)}`}>
+              <span className="inline-flex items-center gap-2">
+                <FileDown className="h-4 w-4" />
+                Exportar PDF
+              </span>
+            </a>
           </Button>
         </div>
 

@@ -7,6 +7,8 @@ type AvaliacaoRow = {
   nota_mercado: number;
   nota_produto: number;
   nota_tecnologia: number;
+  justificativa_geral?: string | null;
+  observacoes_gerais?: string | null;
 };
 
 export type AtribuicaoComAvaliacao = {
@@ -87,23 +89,33 @@ export function ProjetoAvaliadoresNotas({ atribuicoes }: { atribuicoes: Atribuic
               <span className="text-muted-foreground"> · ordem {row.ordem}</span>
               <span className="text-muted-foreground"> · {row.status}</span>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {!row.concluiu ? (
-                <Badge variant="secondary" className="shrink-0">
-                  Não avaliou
-                </Badge>
-              ) : (
-                <div className="text-right text-xs tabular-nums leading-snug">
-                  <div>
-                    <span className="text-muted-foreground">Total ponderado:</span>{" "}
-                    <strong>{Number(row.av!.nota_total_ponderada).toFixed(2)}</strong>
+            <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {!row.concluiu ? (
+                  <Badge variant="secondary" className="shrink-0">
+                    Não avaliou
+                  </Badge>
+                ) : (
+                  <div className="max-w-full text-right text-xs tabular-nums leading-snug sm:max-w-[min(100%,22rem)]">
+                    <div>
+                      <span className="text-muted-foreground">Total ponderado:</span>{" "}
+                      <strong>{Number(row.av!.nota_total_ponderada).toFixed(2)}</strong>
+                    </div>
+                    <div className="text-muted-foreground">
+                      Eq. {row.av!.nota_equipe} · Mc. {row.av!.nota_mercado} · Pr. {row.av!.nota_produto} · Tc.{" "}
+                      {row.av!.nota_tecnologia}
+                    </div>
                   </div>
-                  <div className="text-muted-foreground">
-                    Eq. {row.av!.nota_equipe} · Mc. {row.av!.nota_mercado} · Pr. {row.av!.nota_produto} · Tc.{" "}
-                    {row.av!.nota_tecnologia}
-                  </div>
+                )}
+              </div>
+              {row.concluiu && row.av ? (
+                <div className="w-full rounded-md border border-border/50 bg-background/80 p-2 text-left text-xs leading-relaxed text-foreground sm:max-w-xl sm:ml-auto">
+                  <p className="font-medium text-muted-foreground">Justificativa geral</p>
+                  <p className="mt-1 whitespace-pre-wrap">{(row.av.justificativa_geral ?? "").trim() || "—"}</p>
+                  <p className="mt-2 font-medium text-muted-foreground">Observações gerais</p>
+                  <p className="mt-1 whitespace-pre-wrap">{(row.av.observacoes_gerais ?? "").trim() || "—"}</p>
                 </div>
-              )}
+              ) : null}
             </div>
           </li>
         ))}

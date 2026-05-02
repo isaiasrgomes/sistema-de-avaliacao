@@ -57,7 +57,7 @@ function aplicarRodapeInstitucional(doc: InstanceType<typeof PDFDocument>) {
     doc
       .fontSize(8)
       .fillColor(BRAND_GREEN_DARK)
-      .text(`Pagina ${i + 1} de ${range.count}`, doc.page.width - doc.page.margins.right - 100, y, {
+      .text(`Página ${i + 1} de ${range.count}`, doc.page.width - doc.page.margins.right - 100, y, {
         width: 100,
         align: "right",
         lineBreak: false,
@@ -175,65 +175,159 @@ export async function gerarRelatorioPDFBuffer(
   return done;
 }
 
+type AvaliacaoPdf = {
+  nota_equipe: number;
+  nota_mercado: number;
+  nota_produto: number;
+  nota_tecnologia: number;
+  nota_total_ponderada: number;
+  justificativa_geral: string | null;
+  observacoes_gerais: string | null;
+};
+
+function pickAvPdf(av: AvaliacaoPdf | AvaliacaoPdf[] | null): AvaliacaoPdf | null {
+  if (!av) return null;
+  return Array.isArray(av) ? av[0] ?? null : av;
+}
+
 export async function gerarParecerProjetoPDFBuffer(
   supabase: SupabaseClient,
   projetoId: string
 ): Promise<Buffer> {
   const { data: p } = await supabase.from("projetos").select("*").eq("id", projetoId).single();
-  const { data: res } = await supabase.from("resultados").select("*").eq("projeto_id", projetoId).maybeSingle();
-  const { data: atribs } = await supabase.from("atribuicoes").select("id").eq("projeto_id", projetoId);
-  const ids = atribs?.map((a) => a.id) ?? [];
-  const { data: avs } =
-    ids.length > 0
-      ? await supabase.from("avaliacoes").select("*").in("atribuicao_id", ids)
-      : { data: [] as Record<string, unknown>[] };
+  const { data: atribsRaw } = await supabase
+    .from("atribuicoes")
+    .select(
+      `ordem, status,
+       avaliacoes ( nota_equipe, nota_mercado, nota_produto, nota_tecnologia, nota_total_ponderada, justificativa_geral, observacoes_gerais )`
+    )
+    .eq("projeto_id", projetoId)
+    .order("ordem", { ascending: true });
+
+  const comAvaliacao = (atribsRaw ?? [])
+    .map((row) => {
+      const av = pickAvPdf(row.avaliacoes as AvaliacaoPdf | AvaliacaoPdf[] | null);
+      return av ? { ordem: row.ordem as number, av } : null;
+    })
+    .filter((x): x is { ordem: number; av: AvaliacaoPdf } => x != null)
+    .sort((a, b) => a.ordem - b.ordem);
+
+  const notasTotais = comAvaliacao.map((c) => Number(c.av.nota_total_ponderada));
+  const mediaEntre =
+    notasTotais.length > 0 ? (notasTotais.reduce((s, v) => s + v, 0) / notasTotais.length).toFixed(2) : null;
 
   const chunks: Buffer[] = [];
-  const doc = new PDFDocument({ margin: 50, bufferPages: true });
+  /* bufferPages + rodapé por página geravam páginas extras vazias neste documento; fluxo simples sem numeração. */
+  const doc = new PDFDocument({ margin: 50, autoFirstPage: true });
   doc.on("data", (c) => chunks.push(c));
   const done = new Promise<Buffer>((resolve) => {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
   });
 
-  docHeader(doc, "Parecer consolidado (dados da avaliação)");
-  doc.fontSize(11).font("Helvetica");
-  if (p) {
-    doc.roundedRect(doc.page.margins.left, doc.y, doc.page.width - 100, 84, 8).fill(BRAND_RED_SOFT);
-    doc.roundedRect(doc.page.margins.left, doc.y, 6, 84, 8).fill(BRAND_RED);
-    const detailTop = doc.y - 84;
-    doc.fillColor(BRAND_RED).font("Helvetica-Bold").text("Dados do Projeto", doc.page.margins.left + 12, detailTop + 12);
-    doc.font("Helvetica").fillColor("#1E293B");
-    doc.text(`Projeto: ${p.nome_projeto}`, doc.page.margins.left + 12, detailTop + 34, { lineGap: 2 });
-    doc.text(`Responsavel: ${p.nome_responsavel}`, { lineGap: 2 });
-    doc.text(`Municipio: ${p.municipio}`, { lineGap: 2 });
-    doc.moveDown(1.8);
+  docHeader(doc, "Síntese de avaliações");
+
+  const margin = doc.page.margins.left;
+  const pageInnerW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const gap = 18;
+  const colW = (pageInnerW - gap) / 2;
+  const leftX = margin;
+  const rightX = margin + colW + gap;
+  const pad = 10;
+
+  const leftBlock =
+    p != null
+      ? `Nome do projeto:\n${String(p.nome_projeto ?? "-")}\n\nProprietário / responsável:\n${String(p.nome_responsavel ?? "-")}`
+      : "Projeto não encontrado.";
+
+  const resumoDir =
+    comAvaliacao.length === 0
+      ? "Nenhuma avaliação registrada."
+      : `Avaliadores com parecer: ${comAvaliacao.length}\n` +
+        (mediaEntre != null ? `Média entre avaliadores (total ponderado): ${mediaEntre}\n` : "") +
+        "\n(Notas por critério e textos seguem abaixo.)";
+
+  doc.font("Helvetica-Bold").fontSize(10).fillColor(BRAND_RED);
+  const hTitLeft = doc.heightOfString("Proponente", { width: colW - pad * 2 });
+  doc.font("Helvetica").fontSize(9).fillColor("#1E293B");
+  const hLeft = hTitLeft + doc.heightOfString(leftBlock, { width: colW - pad * 2, lineGap: 2 });
+
+  doc.font("Helvetica-Bold").fontSize(10).fillColor(BRAND_GREEN_DARK);
+  const tituloAval = "Avaliações";
+  const hTitRight = doc.heightOfString(tituloAval, { width: colW - pad * 2 });
+  doc.font("Helvetica").fontSize(9).fillColor("#1E293B");
+  const hRight = hTitRight + doc.heightOfString(resumoDir, { width: colW - pad * 2, lineGap: 2 });
+
+  let y0 = doc.y;
+  const rowH = Math.max(hLeft, hRight, 72) + pad * 2;
+
+  if (y0 + rowH > doc.page.height - doc.page.margins.bottom - 48) {
+    doc.addPage();
+    y0 = doc.page.margins.top;
   }
-  if (res) {
-    doc.roundedRect(doc.page.margins.left, doc.y, doc.page.width - 100, 92, 8).fill(BRAND_GREEN_SOFT);
-    doc.roundedRect(doc.page.margins.left, doc.y, 6, 92, 8).fill(BRAND_GREEN_DARK);
-    const resultTop = doc.y - 92;
-    doc.fillColor(BRAND_GREEN_DARK).font("Helvetica-Bold").text("Resultado Consolidado", doc.page.margins.left + 12, resultTop + 12);
-    doc.font("Helvetica").fillColor("#1E293B");
-    doc.text(`Nota final: ${Number(res.nota_final ?? 0).toFixed(2)}`, doc.page.margins.left + 12, resultTop + 36, { lineGap: 2 });
-    doc.text(`Status: ${getStatusLabel(String(res.status_final ?? "-"))}`, { lineGap: 2 });
-    doc.text(`Posicao geral: ${res.posicao_geral ?? "-"}`, { lineGap: 2 });
-    doc.moveDown(1.8);
+
+  doc.save();
+  doc.roundedRect(leftX, y0, colW, rowH, 6).fill(BRAND_RED_SOFT);
+  doc.roundedRect(rightX, y0, colW, rowH, 6).fill(BRAND_GREEN_SOFT);
+  doc.restore();
+
+  doc.font("Helvetica-Bold").fontSize(10).fillColor(BRAND_RED).text("Proponente", leftX + pad, y0 + pad, { width: colW - pad * 2 });
+  doc.font("Helvetica").fontSize(9).fillColor("#1E293B").text(leftBlock, leftX + pad, y0 + pad + hTitLeft + 4, {
+    width: colW - pad * 2,
+    lineGap: 2,
+  });
+
+  doc.font("Helvetica-Bold").fontSize(10).fillColor(BRAND_GREEN_DARK);
+  doc.text(tituloAval, rightX + pad, y0 + pad, { width: colW - pad * 2 });
+  doc.font("Helvetica").fontSize(9).fillColor("#1E293B");
+  doc.text(resumoDir, rightX + pad, y0 + pad + hTitRight + 4, { width: colW - pad * 2, lineGap: 2 });
+
+  /* Posicionamento absoluto altera doc.x/doc.y; alinhar cursor ao fluxo na margem esquerda, abaixo do bloco duplo. */
+  doc.x = doc.page.margins.left;
+  doc.y = y0 + rowH + 14;
+
+  const fullW = pageInnerW;
+
+  doc.font("Helvetica-Bold").fontSize(11).fillColor(BRAND_RED).text("Notas por avaliador", { width: fullW, lineGap: 4 });
+  doc.moveDown(0.3);
+  doc.font("Helvetica").fontSize(9).fillColor("#334155");
+  if (comAvaliacao.length === 0) {
+    doc.text("Nenhum registro de avaliação.", { width: fullW, lineGap: 2 });
+  } else {
+    comAvaliacao.forEach((c, i) => {
+      const av = c.av;
+      doc.moveDown(0.2);
+      doc.font("Helvetica-Bold").text(`Avaliador ${i + 1}`, { width: fullW, lineGap: 2 });
+      doc.font("Helvetica");
+      doc.text(
+        `Equipe empreendedora: ${av.nota_equipe} | Problema e mercado: ${av.nota_mercado} | Produto/solução: ${av.nota_produto} | Tecnologia: ${av.nota_tecnologia}`,
+        { width: fullW, lineGap: 2 }
+      );
+      doc.text(`Total ponderado: ${Number(av.nota_total_ponderada).toFixed(2)}`, { width: fullW, lineGap: 2 });
+    });
+    if (mediaEntre != null) {
+      doc.moveDown(0.3);
+      doc.font("Helvetica-Bold").text(`Média entre avaliadores (total ponderado): ${mediaEntre}`, { width: fullW, lineGap: 2 });
+    }
   }
-  doc.fontSize(10).font("Helvetica-Bold").fillColor(BRAND_RED).text("Sintese de criterios");
-  doc.font("Helvetica").fillColor("#334155");
-  if (res) {
-    doc.text(
-      `Equipe: ${res.media_equipe ?? "-"} | Mercado: ${res.media_mercado ?? "-"} | Produto: ${res.media_produto ?? "-"} | Tecnologia: ${res.media_tecnologia ?? "-"}`,
-      { lineGap: 3 }
-    );
+
+  doc.moveDown(0.8);
+  doc.font("Helvetica-Bold").fontSize(11).fillColor(BRAND_GREEN_DARK).text("Justificativas e observações", { width: fullW, lineGap: 4 });
+  doc.font("Helvetica").fontSize(9).fillColor("#334155");
+  if (comAvaliacao.length === 0) {
+    doc.text("—", { width: fullW, lineGap: 2 });
+  } else {
+    comAvaliacao.forEach((c, i) => {
+      const av = c.av;
+      const j = (av.justificativa_geral ?? "").trim() || "(sem justificativa registrada)";
+      const o = (av.observacoes_gerais ?? "").trim() || "(sem observações registradas)";
+      doc.moveDown(0.4);
+      doc.font("Helvetica-Bold").text(`Avaliador ${i + 1}`, { width: fullW, lineGap: 2 });
+      doc.font("Helvetica");
+      doc.text(`Justificativa geral:\n${j}`, { width: fullW, lineGap: 2 });
+      doc.text(`Observações gerais:\n${o}`, { width: fullW, lineGap: 2 });
+    });
   }
-  doc.moveDown(1);
-  doc.font("Helvetica-Bold").fillColor(BRAND_GREEN_DARK).text("Resumo:");
-  doc
-    .font("Helvetica")
-    .fillColor("#334155")
-    .text(`Quantidade de avaliacoes consolidadas: ${avs?.length ?? 0}`);
-  aplicarRodapeInstitucional(doc);
+
   doc.end();
   return done;
 }

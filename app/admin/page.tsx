@@ -1,9 +1,12 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import Link from "next/link";
+
+type PendenciaTipo = "SEM_ATRIBUICAO" | "SEM_AVALIACOES" | "AVALIACAO_INCOMPLETA";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardMetricasClient } from "./dashboard-metricas-client";
-import { AlertTriangle, BarChart3, CheckCircle2, Clock3, FileText, UserRoundCheck, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, CheckCircle2, Clock3, ClipboardList, FileText, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export default async function AdminDashboardPage() {
   const supabase = await createServerSupabase();
@@ -18,10 +21,6 @@ export default async function AdminDashboardPage() {
     .from("projetos")
     .select("*", { count: "exact", head: true })
     .eq("status", "EM_AVALIACAO");
-  const { count: ag3 } = await supabase
-    .from("projetos")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "AGUARDANDO_3O_AVALIADOR");
 
   const { data: pends } = await supabase
     .from("atribuicoes")
@@ -37,7 +36,21 @@ export default async function AdminDashboardPage() {
 
   const eleg = Math.max(0, (total ?? 0) - (desc ?? 0));
   const pct = eleg > 0 ? Math.round(((aval ?? 0) / eleg) * 100) : 0;
-  const { data: projetos } = await supabase.from("projetos").select("id, municipio, fase, status, timestamp_submissao");
+  const { data: projetos } = await supabase.from("projetos").select("id, nome_projeto, municipio, fase, status, timestamp_submissao");
+  const projetoIds = (projetos ?? []).map((p) => p.id).filter(Boolean);
+
+  const atribByProjeto = new Map<string, { total: number; concluidas: number }>();
+  if (projetoIds.length > 0) {
+    const { data: atribsAll } = await supabase.from("atribuicoes").select("projeto_id, status").in("projeto_id", projetoIds);
+    for (const row of atribsAll ?? []) {
+      const pid = row.projeto_id as string;
+      const cur = atribByProjeto.get(pid) ?? { total: 0, concluidas: 0 };
+      cur.total += 1;
+      if (row.status === "CONCLUIDA") cur.concluidas += 1;
+      atribByProjeto.set(pid, cur);
+    }
+  }
+
   const { data: avaliacoes } = await supabase.from("avaliacoes").select("data_avaliacao, atribuicoes(projeto_id)");
 
   const firstAvaliacaoByProjeto = new Map<string, Date>();
@@ -49,14 +62,38 @@ export default async function AdminDashboardPage() {
     if (!current || d < current) firstAvaliacaoByProjeto.set(projetoId, d);
   }
 
-  const projetosComMetrica = (projetos ?? []).map((p) => ({
-    id: p.id,
-    municipio: p.municipio,
-    fase: p.fase,
-    status: p.status,
-    timestamp_submissao: p.timestamp_submissao,
-    first_eval_at: firstAvaliacaoByProjeto.get(p.id)?.toISOString() ?? null,
-  }));
+  const projetosComMetrica = (projetos ?? []).map((p) => {
+    const st = atribByProjeto.get(p.id) ?? { total: 0, concluidas: 0 };
+    return {
+      id: p.id,
+      municipio: p.municipio,
+      fase: p.fase,
+      status: p.status,
+      timestamp_submissao: p.timestamp_submissao,
+      first_eval_at: firstAvaliacaoByProjeto.get(p.id)?.toISOString() ?? null,
+      qtd_atribuidos: st.total,
+      qtd_atribuicoes_concluidas: st.concluidas,
+      tem_alguma_avaliacao_entregue: st.concluidas > 0,
+    };
+  });
+
+  const pendenciasProjetos: { id: string; nome_projeto: string; tipo: PendenciaTipo }[] = [];
+  for (const p of projetos ?? []) {
+    if (p.status === "DESCLASSIFICADO") continue;
+    const st = atribByProjeto.get(p.id) ?? { total: 0, concluidas: 0 };
+    if (st.total === 0) {
+      pendenciasProjetos.push({ id: p.id, nome_projeto: p.nome_projeto, tipo: "SEM_ATRIBUICAO" });
+      continue;
+    }
+    if (st.concluidas === 0) {
+      pendenciasProjetos.push({ id: p.id, nome_projeto: p.nome_projeto, tipo: "SEM_AVALIACOES" });
+      continue;
+    }
+    if (st.concluidas < st.total) {
+      pendenciasProjetos.push({ id: p.id, nome_projeto: p.nome_projeto, tipo: "AVALIACAO_INCOMPLETA" });
+    }
+  }
+  pendenciasProjetos.sort((a, b) => a.nome_projeto.localeCompare(b.nome_projeto, "pt-BR"));
   const maxPend = Math.max(1, ...Array.from(pendPorAval.values()));
 
   return (
@@ -120,16 +157,42 @@ export default async function AdminDashboardPage() {
         <Card className="border-border/70 bg-card/85 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <UserRoundCheck className="h-4 w-4 text-amber-500" />
-              Aguardando 3º avaliador
+              <ClipboardList className="h-4 w-4 text-amber-500" />
+              Pendência de projetos
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-3xl font-bold">{ag3 ?? 0}</p>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full bg-amber-500 transition-all" style={{ width: `${Math.min(100, ((ag3 ?? 0) / Math.max(1, total ?? 1)) * 100)}%` }} />
-            </div>
-            <p className="text-xs text-muted-foreground">Proporção sobre total de projetos cadastrados.</p>
+          <CardContent className="max-h-[min(420px,55vh)] space-y-2 overflow-y-auto pr-1">
+            {pendenciasProjetos.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum projeto elegível com pendência neste recorte.</p>
+            ) : (
+              pendenciasProjetos.map((row) => {
+                const label =
+                  row.tipo === "SEM_ATRIBUICAO"
+                    ? "Sem atribuição"
+                    : row.tipo === "SEM_AVALIACOES"
+                      ? "Sem avaliações"
+                      : "Avaliação incompleta";
+                const badgeClass =
+                  row.tipo === "SEM_ATRIBUICAO"
+                    ? "border-muted-foreground/40 bg-muted/50"
+                    : row.tipo === "SEM_AVALIACOES"
+                      ? "border-amber-500/40 bg-amber-500/15 text-amber-900 dark:text-amber-100"
+                      : "border-orange-500/40 bg-orange-500/10 text-orange-900 dark:text-orange-100";
+                return (
+                  <div
+                    key={row.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 px-2 py-2"
+                  >
+                    <Link href={`/admin/projetos/${row.id}`} className="min-w-0 flex-1 text-sm font-medium text-primary hover:underline">
+                      {row.nome_projeto}
+                    </Link>
+                    <Badge variant="outline" className={`shrink-0 whitespace-nowrap ${badgeClass}`}>
+                      {label}
+                    </Badge>
+                  </div>
+                );
+              })
+            )}
           </CardContent>
         </Card>
         <Card className="border-border/70 bg-card/85 shadow-sm">
@@ -139,10 +202,9 @@ export default async function AdminDashboardPage() {
               Avaliadores com pendências
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="max-h-[min(420px,55vh)] space-y-2 overflow-y-auto pr-1">
             {Array.from(pendPorAval.entries())
               .sort((a, b) => b[1] - a[1])
-              .slice(0, 8)
               .map(([id, n]) => {
                 return (
                   <div key={id} className="rounded-lg border border-border/60 p-2">

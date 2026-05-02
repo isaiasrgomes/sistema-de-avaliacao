@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { gerarParecerProjetoPDFBuffer, gerarRelatorioPDFBuffer } from "@/lib/services/pdf-relatorio";
 
+/** Nome de arquivo seguro + RFC 5987 para nomes com acentos. */
+function contentDispositionParecer(nomeProjeto: string | null | undefined): string {
+  const base = (nomeProjeto ?? "projeto").trim().replace(/[\u0000-\u001f<>:"/\\|?*]/g, "").slice(0, 100) || "projeto";
+  const asciiStem =
+    base
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 72) || "projeto";
+  const ascii = `parecer-${asciiStem}.pdf`;
+  const utf8Name = `parecer-${base.replace(/\s+/g, " ").trim().slice(0, 72)}.pdf`;
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(utf8Name)}`;
+}
+
 export async function GET(req: NextRequest) {
   const supabase = await createServerSupabase();
   const {
@@ -16,11 +31,12 @@ export async function GET(req: NextRequest) {
 
   if (tipo === "PARECER") {
     if (!projetoId) return NextResponse.json({ error: "projetoId obrigatório" }, { status: 400 });
+    const { data: meta } = await supabase.from("projetos").select("nome_projeto").eq("id", projetoId).maybeSingle();
     const buf = await gerarParecerProjetoPDFBuffer(supabase, projetoId);
     return new NextResponse(new Uint8Array(buf), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="parecer-${projetoId}.pdf"`,
+        "Content-Disposition": contentDispositionParecer(meta?.nome_projeto ?? null),
       },
     });
   }

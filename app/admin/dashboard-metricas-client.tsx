@@ -13,6 +13,9 @@ type DashboardProjetoMetric = {
   status: string;
   timestamp_submissao: string;
   first_eval_at: string | null;
+  qtd_atribuidos: number;
+  qtd_atribuicoes_concluidas: number;
+  tem_alguma_avaliacao_entregue: boolean;
 };
 
 export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: DashboardProjetoMetric[]; progressoPct: number }) {
@@ -33,28 +36,39 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
   }, [projetos, filtroMunicipio, filtroFase]);
 
   const topMunicipios = useMemo(() => {
-    const metricsPorMunicipio = new Map<string, { total: number; ideacao: number; validacao: number; avaliados: number }>();
+    const metricsPorMunicipio = new Map<
+      string,
+      { total: number; ideacao: number; validacao: number; comAvaliacaoEntregue: number; somaAvaliadoresConcluiram: number }
+    >();
     for (const p of filtrados) {
-      const item = metricsPorMunicipio.get(p.municipio) ?? { total: 0, ideacao: 0, validacao: 0, avaliados: 0 };
+      const item =
+        metricsPorMunicipio.get(p.municipio) ?? {
+          total: 0,
+          ideacao: 0,
+          validacao: 0,
+          comAvaliacaoEntregue: 0,
+          somaAvaliadoresConcluiram: 0,
+        };
       item.total += 1;
       if (p.fase === "IDEACAO") item.ideacao += 1;
       if (p.fase === "VALIDACAO") item.validacao += 1;
-      if (p.status === "AVALIADO" || p.status === "SELECIONADO" || p.status === "SUPLENTE" || p.status === "NAO_SELECIONADO") {
-        item.avaliados += 1;
-      }
+      if (p.tem_alguma_avaliacao_entregue) item.comAvaliacaoEntregue += 1;
+      item.somaAvaliadoresConcluiram += p.qtd_atribuicoes_concluidas ?? 0;
       metricsPorMunicipio.set(p.municipio, item);
     }
     return Array.from(metricsPorMunicipio.entries())
-      .map(([municipio, m]) => ({ municipio, ...m, taxaAvaliacao: m.total ? Math.round((m.avaliados / m.total) * 100) : 0 }))
+      .map(([municipio, m]) => ({
+        municipio,
+        ...m,
+        taxaAvaliacao: m.total ? Math.round((m.comAvaliacaoEntregue / m.total) * 100) : 0,
+      }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
   }, [filtrados]);
 
   const taxa = useMemo(() => {
-    const avaliados = filtrados.filter(
-      (p) => p.status === "AVALIADO" || p.status === "SELECIONADO" || p.status === "SUPLENTE" || p.status === "NAO_SELECIONADO"
-    ).length;
-    return filtrados.length ? Math.round((avaliados / filtrados.length) * 100) : 0;
+    const comEntrega = filtrados.filter((p) => p.tem_alguma_avaliacao_entregue).length;
+    return filtrados.length ? Math.round((comEntrega / filtrados.length) * 100) : 0;
   }, [filtrados]);
 
   const tempoMedioHoras = useMemo(() => {
@@ -92,13 +106,7 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
   const maxSerie = useMemo(() => Math.max(1, ...serieTemporal.map((s) => Math.max(s.submetidos, s.avaliados))), [serieTemporal]);
   const totalIdeacao = useMemo(() => filtrados.filter((p) => p.fase === "IDEACAO").length, [filtrados]);
   const totalValidacao = useMemo(() => filtrados.filter((p) => p.fase === "VALIDACAO").length, [filtrados]);
-  const totalAvaliados = useMemo(
-    () =>
-      filtrados.filter(
-        (p) => p.status === "AVALIADO" || p.status === "SELECIONADO" || p.status === "SUPLENTE" || p.status === "NAO_SELECIONADO"
-      ).length,
-    [filtrados]
-  );
+  const totalAvaliados = useMemo(() => filtrados.filter((p) => p.tem_alguma_avaliacao_entregue).length, [filtrados]);
   const totalNaoAvaliados = Math.max(0, filtrados.length - totalAvaliados);
 
   function exportarCsvRecorte() {
@@ -110,12 +118,26 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
       "timestamp_submissao",
       "first_eval_at",
       "tempo_ate_primeira_avaliacao_horas",
+      "qtd_atribuidos",
+      "qtd_atribuicoes_concluidas",
+      "tem_alguma_avaliacao_entregue",
     ];
     const rows = filtrados.map((p) => {
       const horas = p.first_eval_at
         ? ((new Date(p.first_eval_at).getTime() - new Date(p.timestamp_submissao).getTime()) / (1000 * 60 * 60)).toFixed(1)
         : "";
-      return [p.id, p.municipio, p.fase, p.status, p.timestamp_submissao, p.first_eval_at ?? "", horas];
+      return [
+        p.id,
+        p.municipio,
+        p.fase,
+        p.status,
+        p.timestamp_submissao,
+        p.first_eval_at ?? "",
+        horas,
+        String(p.qtd_atribuidos ?? 0),
+        String(p.qtd_atribuicoes_concluidas ?? 0),
+        p.tem_alguma_avaliacao_entregue ? "sim" : "nao",
+      ];
     });
     const csv = [headers, ...rows]
       .map((linha) => linha.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
@@ -190,7 +212,7 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
           <CardContent className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-bold">{taxa}%</p>
-              <p className="text-xs text-muted-foreground">Projetos já avaliados no recorte</p>
+              <p className="text-xs text-muted-foreground">Projetos com ao menos uma avaliação entregue</p>
             </div>
             <Gauge className="h-5 w-5 text-emerald-500" />
           </CardContent>
@@ -213,14 +235,20 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
         <Card className="w-full border-border/70 bg-card/85 shadow-sm">
           <CardHeader>
             <CardTitle className="text-base">Métricas por município e fase</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              I = projetos na fase Ideação · V = fase Validação · Av = % com ao menos uma avaliação entregue · número final = avaliações
+              concluídas (soma de avaliadores que já enviaram nota no município).
+            </p>
           </CardHeader>
           <CardContent className="space-y-1.5">
             {topMunicipios.map((m) => (
               <div key={m.municipio} className="rounded-md border border-border/60 px-2 py-1.5">
-                <div className="mb-1 flex items-center justify-between text-xs">
-                  <span className="truncate pr-2 font-medium text-foreground">{m.municipio}</span>
-                  <span className="text-muted-foreground">
-                    {m.total} | I {m.ideacao} | V {m.validacao} | Av {m.taxaAvaliacao}%
+                <div className="mb-1 flex items-start justify-between gap-2 text-xs">
+                  <span className="min-w-0 truncate font-medium text-foreground">{m.municipio}</span>
+                  <span className="shrink-0 text-right text-muted-foreground">
+                    {m.total} | I {m.ideacao} | V {m.validacao} | Av {m.taxaAvaliacao}% | {m.somaAvaliadoresConcluiram}{" "}
+                    <span className="hidden sm:inline">avaliador(es)</span>
+                    <span className="sm:hidden">av.</span>
                   </span>
                 </div>
                 <div className="h-1 rounded bg-muted">
@@ -286,7 +314,7 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
                 <div className="mb-1 flex items-center justify-between">
                   <span>Status</span>
                   <span>
-                    Avaliados {totalAvaliados} | Pendentes {totalNaoAvaliados}
+                    Com avaliação {totalAvaliados} | Sem entrega {totalNaoAvaliados}
                   </span>
                 </div>
                 <div className="h-1 rounded bg-muted">
