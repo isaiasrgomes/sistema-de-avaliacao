@@ -23,6 +23,13 @@ function fromLocalInput(v: string): string | null {
   return d.toISOString();
 }
 
+function formatPtBrDateTime(value: string | null): string {
+  if (!value) return "Não definido";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "Não definido";
+  return d.toLocaleString("pt-BR");
+}
+
 export function ProgramaClient({
   initial,
 }: {
@@ -44,7 +51,6 @@ export function ProgramaClient({
   const [loading, setLoading] = useState<"save" | "prorro" | "email" | null>(null);
 
   const fimVigenteIso = initial.prorrogacao_fim ?? initial.avaliacoes_fim;
-  const fimVigente = fimVigenteIso ? new Date(fimVigenteIso) : null;
 
   return (
     <div className="space-y-6">
@@ -107,15 +113,13 @@ export function ProgramaClient({
         <p className="mb-3 text-sm text-muted-foreground">
           Define uma nova data/hora final. Após confirmar, não será possível alterar de novo.
         </p>
-        {fimVigente && !Number.isNaN(fimVigente.getTime()) && (
-          <p className="mb-2 text-sm text-muted-foreground">
-            Prazo final vigente: <strong>{fimVigente.toLocaleString("pt-BR")}</strong>
-          </p>
-        )}
+        <p className="mb-2 text-sm text-muted-foreground">
+          Prazo final vigente: <strong>{formatPtBrDateTime(fimVigenteIso)}</strong>
+        </p>
         {utilizada ? (
           <p className="text-sm text-muted-foreground">
             Prorrogação já aplicada. Data registrada:{" "}
-            {initial.prorrogacao_fim ? new Date(initial.prorrogacao_fim).toLocaleString("pt-BR") : "—"}
+              {formatPtBrDateTime(initial.prorrogacao_fim)}
           </p>
         ) : (
           <>
