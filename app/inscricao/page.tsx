@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SertaoMakerBrand } from "@/components/brand-logo";
+import { SectionCard } from "@/components/layout/section-card";
 import { ProjetoInscricaoForm } from "@/app/admin/importar/projeto-manual-form";
 import { UFS_BRASIL } from "@/lib/constants/brasil";
 import { loadMunicipiosParaInscricao } from "@/lib/data/municipios-inscricao";
@@ -44,14 +45,14 @@ export default async function InscricaoPage() {
       </div>
 
       {!estado.aberta ? (
-        <p className="rounded-lg border border-border/70 bg-muted/40 px-4 py-3 text-center text-sm text-muted-foreground">
+        <SectionCard className="text-center text-sm text-muted-foreground bg-muted/30">
           Quando uma nova edição for aberta pela coordenação, o formulário de inscrição será liberado na página
           inicial.
-        </p>
+        </SectionCard>
       ) : municipiosErro ? (
-        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <SectionCard className="border-destructive/40 bg-destructive/10 text-sm text-destructive">
           {municipiosErro}
-        </p>
+        </SectionCard>
       ) : (
         <ProjetoInscricaoForm municipios={municipios} ufs={[...UFS_BRASIL]} variant="public" />
       )}

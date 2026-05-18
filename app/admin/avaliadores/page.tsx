@@ -1,4 +1,5 @@
 import { createServerSupabase } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/layout/page-header";
 import { AvaliadoresClient } from "./avaliadores-client";
 
 export default async function AvaliadoresPage() {
@@ -32,14 +33,11 @@ export default async function AvaliadoresPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Avaliadores</h1>
-        <p className="text-sm text-muted-foreground">
-          Avaliadores podem criar conta com e-mail e senha; o coordenador aprova abaixo antes de liberar o acesso. O
-          e-mail do cadastro deve ser o mesmo usado no login. Também é possível cadastrar manualmente (sem conta ainda).
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Avaliadores"
+        description="Aprove cadastros, gerencie avaliadores e envie comunicações. O e-mail do cadastro deve ser o mesmo usado no login."
+      />
       <AvaliadoresClient initial={comCarga} cadastrosPendentes={pendentes ?? []} integrations={integrations} />
     </div>
   );

@@ -17,9 +17,13 @@ import {
 } from "@/app/actions/avaliadores-crud";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SectionCard, SectionCardHeader, TableSection } from "@/components/layout/section-card";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { Select } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 import { Loader2, Mail } from "lucide-react";
 
@@ -115,7 +119,7 @@ export function AvaliadoresClient({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
+      <SectionCard>
         <p className="text-sm font-medium text-foreground">Status das integrações</p>
         <div className="mt-2 flex flex-wrap gap-2">
           <Badge
@@ -142,17 +146,15 @@ export function AvaliadoresClient({
             Configure <code>RESEND_API_KEY</code> e <code>EMAIL_FROM</code> para envio automático das credenciais.
           </p>
         )}
-      </div>
+      </SectionCard>
 
       {cadastrosPendentes.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-amber-500/40 bg-amber-500/5 shadow-sm">
-          <div className="border-b border-amber-500/20 px-4 py-3">
-            <p className="font-medium text-foreground">Cadastros aguardando aprovação</p>
-            <p className="text-xs text-muted-foreground">
-              Ao aprovar, o avaliador poderá entrar na área restrita e será criada ou atualizada a linha correspondente
-              nesta lista. Se não aceitar o cadastro, a pessoa verá um aviso ao entrar e não terá acesso à avaliação.
-            </p>
-          </div>
+        <SectionCard className="border-amber-500/40 bg-amber-500/5" padding={false}>
+          <SectionCardHeader
+            className="border-amber-500/20 px-4 pt-4 sm:px-5"
+            title="Cadastros aguardando aprovação"
+            description="Ao aprovar, o avaliador poderá entrar na área restrita e será criada ou atualizada a linha correspondente nesta lista. Se não aceitar o cadastro, a pessoa verá um aviso ao entrar e não terá acesso à avaliação."
+          />
           <Table>
             <TableHeader>
               <TableRow>
@@ -213,10 +215,10 @@ export function AvaliadoresClient({
               ))}
             </TableBody>
           </Table>
-        </div>
+        </SectionCard>
       )}
 
-      <div className="flex flex-wrap gap-2 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
+      <SectionCard className="flex flex-wrap gap-2">
         <Input placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} className="w-full sm:max-w-xs" />
         <Input placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full sm:max-w-xs" />
         <Input
@@ -251,8 +253,8 @@ export function AvaliadoresClient({
         >
           Adicionar
         </Button>
-      </div>
-      <div className="space-y-2 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
+      </SectionCard>
+      <SectionCard className="space-y-2">
         <p className="text-sm text-muted-foreground">
           Importar CSV de avaliadores com cabeçalhos contendo <code>nome</code> e <code>email</code> (por exemplo:
           <code> 1. Nome Completo</code> e <code>2. E-mail</code> do Google Forms). O sistema gera senha aleatória e
@@ -275,8 +277,8 @@ export function AvaliadoresClient({
             }}
           />
         </div>
-        <textarea
-          className="min-h-28 w-full rounded-md border border-input bg-background p-2 text-sm"
+        <Textarea
+          className="min-h-28"
           value={csvText}
           onChange={(e) => setCsvText(e.target.value)}
           placeholder={"nome,email\nMaria,maria@email.com\nJoão,joao@email.com"}
@@ -307,29 +309,36 @@ export function AvaliadoresClient({
             Importar CSV de avaliadores
           </Button>
         </div>
-      </div>
-      <div className="overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <select
-              value={filtroTabela}
-              onChange={(e) => setFiltroTabela(e.target.value as FiltroStatus)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="todos">Todos na lista</option>
-              <option value="ativo">Somente ativos</option>
-              <option value="inativo">Somente inativos</option>
-            </select>
-            <p className="text-sm text-muted-foreground">
-              ✅ {selecionados.size} avaliador{selecionados.size === 1 ? "" : "es"} selecionado
-              {selecionados.size === 1 ? "" : "s"}
-            </p>
-          </div>
-          <Button onClick={abrirModalEmail} disabled={!integrations.resend || initial.length === 0}>
-            <Mail className="mr-2 h-4 w-4" />
-            Enviar e-mail
-          </Button>
-        </div>
+      </SectionCard>
+      <TableSection
+        toolbar={
+          <DataTableToolbar
+            filters={
+              <>
+                <Select
+                  value={filtroTabela}
+                  onChange={(e) => setFiltroTabela(e.target.value as FiltroStatus)}
+                  className="h-9 w-auto min-w-[10rem]"
+                >
+                  <option value="todos">Todos na lista</option>
+                  <option value="ativo">Somente ativos</option>
+                  <option value="inativo">Somente inativos</option>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  ✅ {selecionados.size} avaliador{selecionados.size === 1 ? "" : "es"} selecionado
+                  {selecionados.size === 1 ? "" : "s"}
+                </p>
+              </>
+            }
+            actions={
+              <Button onClick={abrirModalEmail} disabled={!integrations.resend || initial.length === 0}>
+                <Mail className="mr-2 h-4 w-4" />
+                Enviar e-mail
+              </Button>
+            }
+          />
+        }
+      >
       <Table>
         <TableHeader>
           <TableRow>
@@ -370,7 +379,7 @@ export function AvaliadoresClient({
               <TableCell>{a.carga}</TableCell>
               <TableCell>{a.avaliacoes_finalizadas}</TableCell>
               <TableCell>
-                <Badge variant={a.ativo ? "default" : "secondary"}>{a.ativo ? "Ativo" : "Inativo"}</Badge>
+                <StatusBadge status={a.ativo ? "ATIVO" : "INATIVO"} label={a.ativo ? "Ativo" : "Inativo"} />
               </TableCell>
               <TableCell className="space-x-2 text-right">
                 <Button size="sm" variant="outline" onClick={() => actionToggleAvaliador(a.id, !a.ativo).then(() => window.location.reload())}>
@@ -402,7 +411,7 @@ export function AvaliadoresClient({
           ))}
         </TableBody>
       </Table>
-      </div>
+      </TableSection>
 
       <Dialog
         open={modalEmail}
@@ -453,16 +462,16 @@ export function AvaliadoresClient({
                 />
                 <span className="flex flex-wrap items-center gap-2">
                   Grupo por status:
-                  <select
+                  <Select
                     value={filtroDestinatario}
                     onChange={(e) => setFiltroDestinatario(e.target.value as "ativo" | "inativo")}
                     disabled={modoDestinatarios !== "filtro"}
-                    className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                    className="h-8 w-auto min-w-[7rem] px-2 text-sm"
                     onClick={() => setModoDestinatarios("filtro")}
                   >
                     <option value="ativo">Ativos</option>
                     <option value="inativo">Inativos</option>
-                  </select>
+                  </Select>
                   <span className="text-muted-foreground">
                     (
                     {initial.filter((a) => (filtroDestinatario === "ativo" ? a.ativo : !a.ativo)).length})
@@ -496,7 +505,7 @@ export function AvaliadoresClient({
               </p>
             </div>
           </div>
-          <div className="flex justify-end gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setModalEmail(false)} disabled={enviando}>
               Cancelar
             </Button>
@@ -516,7 +525,7 @@ export function AvaliadoresClient({
             >
               Revisar envio
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -534,7 +543,7 @@ export function AvaliadoresClient({
             Tem certeza que deseja enviar este e-mail para{" "}
             <strong>{idsDestinatarios.length}</strong> avaliador{idsDestinatarios.length === 1 ? "" : "es"}?
           </p>
-          <div className="flex justify-end gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setModalConfirmar(false)} disabled={enviando}>
               Cancelar
             </Button>
@@ -577,7 +586,7 @@ export function AvaliadoresClient({
                 "Confirmar envio"
               )}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -605,7 +614,7 @@ export function AvaliadoresClient({
               <Input id="edit-inst" value={editInst} onChange={(e) => setEditInst(e.target.value)} />
             </div>
           </div>
-          <div className="flex justify-end gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setEditando(null)}>
               Cancelar
             </Button>
@@ -627,7 +636,7 @@ export function AvaliadoresClient({
             >
               Salvar
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -645,7 +654,7 @@ export function AvaliadoresClient({
             Excluir o avaliador {aExcluir ? `"${aExcluir.nome}"` : ""}? As atribuições desse avaliador podem ficar
             incompletas e exigir redistribuição.
           </p>
-          <div className="flex justify-end gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setAExcluir(null)}>
               Cancelar
             </Button>
@@ -664,7 +673,7 @@ export function AvaliadoresClient({
             >
               Excluir avaliador
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

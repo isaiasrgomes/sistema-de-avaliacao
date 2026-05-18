@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard, SectionCardHeader } from "@/components/layout/section-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Building2, CalendarRange, Download, Gauge, Timer } from "lucide-react";
@@ -154,7 +154,7 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-3 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm">
+      <SectionCard className="flex flex-wrap gap-3 bg-muted/20">
         <div className="min-w-56 space-y-1">
           <p className="text-xs text-muted-foreground">Município</p>
           <select
@@ -191,57 +191,49 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
             Exportar recorte (CSV)
           </Button>
         </div>
-      </div>
+      </SectionCard>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-border/70 bg-card/85 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Top municípios</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
+        <SectionCard>
+          <SectionCardHeader title="Top municípios" className="border-0 pb-2" />
+          <div className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-bold">{topMunicipios[0]?.municipio ?? "Sem dados"}</p>
               <p className="text-xs text-muted-foreground">Maior volume no recorte atual</p>
             </div>
             <Building2 className="h-5 w-5 text-primary" />
-          </CardContent>
-        </Card>
-        <Card className="border-border/70 bg-card/85 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de avaliação</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
+          </div>
+        </SectionCard>
+        <SectionCard>
+          <SectionCardHeader title="Taxa de avaliação" className="border-0 pb-2" />
+          <div className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-bold">{taxa}%</p>
               <p className="text-xs text-muted-foreground">Projetos com ao menos uma avaliação entregue</p>
             </div>
             <Gauge className="h-5 w-5 text-emerald-500" />
-          </CardContent>
-        </Card>
-        <Card className="border-border/70 bg-card/85 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Tempo médio por projeto</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
+          </div>
+        </SectionCard>
+        <SectionCard>
+          <SectionCardHeader title="Tempo médio por projeto" className="border-0 pb-2" />
+          <div className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-bold">{tempoMedioHoras}h</p>
               <p className="text-xs text-muted-foreground">Da submissão à 1ª avaliação</p>
             </div>
             <Timer className="h-5 w-5 text-amber-500" />
-          </CardContent>
-        </Card>
+          </div>
+        </SectionCard>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="w-full border-border/70 bg-card/85 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Métricas por município e fase</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              I = projetos na fase Ideação · V = fase Validação · Av = % com ao menos uma avaliação entregue · número final = avaliações
-              concluídas (soma de avaliadores que já enviaram nota no município).
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-1.5">
+        <SectionCard className="w-full">
+          <SectionCardHeader
+            title="Métricas por município e fase"
+            description="I = projetos na fase Ideação · V = fase Validação · Av = % com ao menos uma avaliação entregue · número final = avaliações concluídas (soma de avaliadores que já enviaram nota no município)."
+            className="border-0 pb-4"
+          />
+          <div className="space-y-1.5">
             {topMunicipios.map((m) => (
               <div key={m.municipio} className="rounded-md border border-border/60 px-2 py-1.5">
                 <div className="mb-1 flex items-start justify-between gap-2 text-xs">
@@ -258,18 +250,13 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
               </div>
             ))}
             {topMunicipios.length === 0 && <p className="text-sm text-muted-foreground">Nenhum projeto no recorte atual.</p>}
-          </CardContent>
-        </Card>
+          </div>
+        </SectionCard>
 
         <div className="space-y-4">
-          <Card className="border-border/70 bg-card/85 shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <CalendarRange className="h-4 w-4 text-primary" />
-                Tendência temporal (mês)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
+          <SectionCard>
+            <SectionCardHeader title="Tendência temporal (mês)" className="border-0 pb-4" />
+            <div className="space-y-2">
               {serieTemporal.map((s) => (
                 <div key={s.mes} className="space-y-1">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -289,14 +276,12 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
                 </div>
               ))}
               {serieTemporal.length === 0 && <p className="text-sm text-muted-foreground">Sem dados no recorte.</p>}
-            </CardContent>
-          </Card>
+            </div>
+          </SectionCard>
 
-          <Card className="border-border/70 bg-card/85 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">Distribuição do recorte</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-xs text-muted-foreground">
+          <SectionCard>
+            <SectionCardHeader title="Distribuição do recorte" className="border-0 pb-4" />
+            <div className="space-y-2 text-xs text-muted-foreground">
               <div className="rounded-md border border-border/60 px-2 py-1.5">
                 <div className="mb-1 flex items-center justify-between">
                   <span>Fase</span>
@@ -325,31 +310,27 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionCard>
 
-          <Card className="border-border/70 bg-card/85 shadow-sm">
-            <CardContent className="pt-5">
-              <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Download className="h-3.5 w-3.5" />
-                Use “Exportar recorte (CSV)” para levar essa visão para BI/planilha.
-              </p>
-            </CardContent>
-          </Card>
+          <SectionCard>
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Download className="h-3.5 w-3.5" />
+              Use “Exportar recorte (CSV)” para levar essa visão para BI/planilha.
+            </p>
+          </SectionCard>
 
-          <Card className="border-border/70 bg-card/85 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Progresso estimado</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
+          <SectionCard>
+            <SectionCardHeader title="Progresso estimado" className="border-0 pb-2" />
+            <div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, progressoPct)}%` }} />
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
                 {progressoPct}% dos elegíveis com ao menos uma avaliação entregue (inclui selecionados, suplentes e não selecionados).
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionCard>
         </div>
       </div>
     </div>

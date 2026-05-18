@@ -26,11 +26,11 @@ export function PortalCard({
   const content = (
     <article
       className={cn(
-        "flex h-full flex-col rounded-2xl border border-border/60 bg-card/75 p-6 shadow-sm backdrop-blur-md transition-all duration-300",
+        "flex h-full flex-col rounded-xl border border-border/60 bg-card p-6 shadow-card transition-shadow duration-300",
         featured && "sm:p-8",
         disabled
           ? "cursor-not-allowed opacity-60"
-          : "hover:-translate-y-1 hover:border-primary/35 hover:shadow-lg hover:shadow-primary/5"
+          : "hover:border-primary/35 hover:shadow-card-hover"
       )}
       aria-disabled={disabled || undefined}
     >

@@ -14,5 +14,19 @@ export function AppToaster() {
     return () => media.removeEventListener("change", apply);
   }, []);
 
-  return <Toaster richColors position={isMobile ? "bottom-center" : "top-center"} />;
+  return (
+    <Toaster
+      richColors
+      closeButton
+      expand
+      position={isMobile ? "bottom-center" : "top-right"}
+      toastOptions={{
+        classNames: {
+          toast: "rounded-xl border border-border/60 shadow-card",
+          title: "text-sm font-medium",
+          description: "text-xs text-muted-foreground",
+        },
+      }}
+    />
+  );
 }

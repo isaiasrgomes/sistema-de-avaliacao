@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/layout/page-header";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getProgramaMonitorForPage } from "@/lib/programa/page-helper";
 import { ProjetosClient } from "./projetos-client";
@@ -73,11 +74,11 @@ export default async function AdminProjetosPage() {
   );
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Projetos - triagem</h1>
-        <p className="text-sm text-muted-foreground">Filtre, desclassifique ou reclassifique inscricoes.</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Projetos — triagem"
+        description="Filtre, desclassifique ou reclassifique inscrições do programa monitorado."
+      />
       <ProjetosClient
         initial={projetosEnriquecidos}
         avaliadoresResumo={avaliadoresResumo}

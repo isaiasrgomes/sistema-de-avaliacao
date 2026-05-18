@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/layout/page-header";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getProgramaMonitorForPage } from "@/lib/programa/page-helper";
 import { isProgramaFinalizado } from "@/lib/programa/context";
@@ -78,10 +79,10 @@ export default async function RankingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Ranking</h1>
-        <p className="text-sm text-muted-foreground">Gere o ranking numérico, defina vagas e aplique a cota do Sertão.</p>
-      </div>
+      <PageHeader
+        title="Ranking"
+        description="Gere o ranking numérico, defina vagas e aplique a cota do Sertão."
+      />
       <RankingClient totalVagasInicial={cfg.total_vagas} readonly={isProgramaFinalizado(programa)} />
       <RankingTable rows={tableRows} />
     </div>

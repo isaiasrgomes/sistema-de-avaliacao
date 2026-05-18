@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { SectionCard, TableSection } from "@/components/layout/section-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { actionAtribuirTerceiro, actionDesclassificar, actionReclassificar } from "@/app/actions/admin";
@@ -253,7 +255,7 @@ export function ProjetosClient({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm md:grid-cols-3">
+      <SectionCard className="grid gap-3 md:grid-cols-3">
         <div className="space-y-2 md:col-span-3">
           <Label>Pesquisar projetos</Label>
           <div className="rounded-md border border-border/70 bg-popover p-2 shadow-lg">
@@ -301,8 +303,8 @@ export function ProjetosClient({
         >
           Limpar filtros
         </Button>
-      </div>
-      <div className="overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm">
+      </SectionCard>
+      <TableSection>
       <Table>
         <TableHeader>
           <TableRow>
@@ -329,13 +331,11 @@ export function ProjetosClient({
               <TableCell>
                 {(p.qtd_avaliadores_atual ?? 0) > 0 &&
                 ((p.qtd_avaliadores_atual ?? 0) < 2 || (p.qtd_avaliacoes_finalizadas ?? 0) < (p.qtd_avaliadores_atual ?? 0)) ? (
-                  <Badge className="border-red-500/35 bg-red-500/10 text-red-700 dark:border-violet-300/40 dark:bg-violet-300/15 dark:text-violet-200">
-                    Avaliação pendente
-                  </Badge>
+                  <StatusBadge status="PENDENTE" label="Avaliação pendente" />
                 ) : (p.qtd_avaliadores_atual ?? 0) === 0 ? (
-                  <Badge variant="outline">Inscrito</Badge>
+                  <StatusBadge status="INSCRITO" />
                 ) : (
-                  <Badge variant="outline">{labelStatus(p.status)}</Badge>
+                  <StatusBadge status={p.status} label={labelStatus(p.status)} />
                 )}
                 {p.is_sertao && (
                   <Badge className="ml-1" variant="secondary">
@@ -406,7 +406,7 @@ export function ProjetosClient({
           ))}
         </TableBody>
       </Table>
-      </div>
+      </TableSection>
 
       <Dialog
         open={!!projetoParaAdicionar}
@@ -469,7 +469,7 @@ export function ProjetosClient({
               </TableBody>
             </Table>
           </div>
-          <div className="flex justify-end gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setProjetoParaAdicionar(null)}>
               Cancelar
             </Button>
@@ -489,7 +489,7 @@ export function ProjetosClient({
             >
               Confirmar adição
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

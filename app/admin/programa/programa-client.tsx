@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SectionCard, SectionCardHeader } from "@/components/layout/section-card";
 import { actionLembreteAvaliadoresPendentes, actionProrrogarPrazo, actionSalvarPrograma } from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -56,8 +57,8 @@ export function ProgramaClient({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
-        <h2 className="mb-3 font-semibold">Dados gerais</h2>
+      <SectionCard>
+        <SectionCardHeader title="Dados gerais" className="border-0 pb-4" />
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
             <Label>Nome do programa / edital</Label>
@@ -108,13 +109,14 @@ export function ProgramaClient({
           {loading === "save" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Salvar
         </Button>
-      </div>
+      </SectionCard>
 
-      <div className="rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
-        <h2 className="mb-1 font-semibold">Prorrogação do prazo (uma vez)</h2>
-        <p className="mb-3 text-sm text-muted-foreground">
-          Define uma nova data/hora final. Após confirmar, não será possível alterar de novo.
-        </p>
+      <SectionCard>
+        <SectionCardHeader
+          title="Prorrogação do prazo (uma vez)"
+          description="Define uma nova data/hora final. Após confirmar, não será possível alterar de novo."
+          className="border-0 pb-4"
+        />
         <p className="mb-2 text-sm text-muted-foreground">
           Prazo final vigente: <strong>{formatPtBrDateTime(fimVigenteIso)}</strong>
         </p>
@@ -157,14 +159,14 @@ export function ProgramaClient({
             </Button>
           </>
         )}
-      </div>
+      </SectionCard>
 
-      <div className="rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
-        <h2 className="mb-1 font-semibold">Lembretes por e-mail</h2>
-        <p className="mb-3 text-sm text-muted-foreground">
-          Envia um lembrete para cada avaliador que ainda tem atribuição pendente (ou em andamento). Configure{" "}
-          <code className="text-xs">RESEND_API_KEY</code> e <code className="text-xs">EMAIL_FROM</code> no servidor.
-        </p>
+      <SectionCard>
+        <SectionCardHeader
+          title="Lembretes por e-mail"
+          description="Envia um lembrete para cada avaliador que ainda tem atribuição pendente (ou em andamento). Configure RESEND_API_KEY e EMAIL_FROM no servidor."
+          className="border-0 pb-4"
+        />
         <Button
           variant="outline"
           disabled={loading !== null}
@@ -188,7 +190,7 @@ export function ProgramaClient({
           {loading === "email" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Lembrar avaliadores pendentes
         </Button>
-      </div>
+      </SectionCard>
     </div>
   );
 }

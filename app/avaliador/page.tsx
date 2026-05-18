@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/layout/page-header";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { podeEnviarAvaliacaoAgora } from "@/lib/prazo-avaliacoes";
 import { ProjetosAvaliadorClient } from "./projetos-client";
@@ -54,13 +55,11 @@ export default async function AvaliadorHomePage() {
   const prazoEnvio = cfgPrazo ? podeEnviarAvaliacaoAgora(cfgPrazo) : { ok: true as const };
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Meus projetos</h1>
-        <p className="text-sm text-muted-foreground">
-          Filtre por pendentes, já avaliados ou todos para organizar melhor sua lista.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Meus projetos"
+        description="Filtre por pendentes, já avaliados ou todos para organizar melhor sua lista."
+      />
       <ProjetosAvaliadorClient rows={rows} prazoBloqueado={!prazoEnvio.ok} motivoBloqueioPrazo={prazoEnvio.motivo} />
     </div>
   );

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { SertaoMakerBrand } from "@/components/brand-logo";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/layout/section-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { labelTipoPrograma, type Programa } from "@/lib/programa/types";
 
@@ -40,14 +41,17 @@ export default async function HistoricoProgramasPage() {
 
       <div className="grid gap-4">
         {programas.map((p) => (
-          <Card key={p.id} className="border-border/70 bg-card/85">
-            <CardHeader>
-              <CardTitle className="text-lg">{p.nome}</CardTitle>
-              <CardDescription>
-                {labelTipoPrograma(p.tipo)} · {p.edital}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-end justify-between gap-4 text-sm text-muted-foreground">
+          <SectionCard key={p.id} className="space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0 space-y-1">
+                <h2 className="text-lg font-semibold">{p.nome}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {labelTipoPrograma(p.tipo)} · {p.edital}
+                </p>
+              </div>
+              <StatusBadge status="FINALIZADO" label="Finalizado" />
+            </div>
+            <div className="flex flex-wrap items-end justify-between gap-4 text-sm text-muted-foreground">
               <div className="space-y-1">
                 <p>
                   Programa: {fmtDate(p.data_inicio)} — {fmtDate(p.data_fim)}
@@ -57,8 +61,8 @@ export default async function HistoricoProgramasPage() {
               <Button asChild>
                 <Link href={`/historico-programas/${p.id}`}>Ver resultado</Link>
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionCard>
         ))}
       </div>
 
@@ -68,4 +72,3 @@ export default async function HistoricoProgramasPage() {
     </main>
   );
 }
-

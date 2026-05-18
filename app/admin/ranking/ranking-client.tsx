@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SectionCard } from "@/components/layout/section-card";
 import { actionAplicarCota, actionGerarRanking, actionSalvarVagas } from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -20,7 +21,7 @@ export function RankingClient({
   const [loadingKey, setLoadingKey] = useState<"vagas" | "ranking" | "cota" | null>(null);
 
   return (
-    <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
+    <SectionCard className="flex flex-wrap items-end gap-4">
       <div className="space-y-2">
         <Label>Total de vagas</Label>
         <Input className="w-32" value={vagas} onChange={(e) => setVagas(e.target.value)} />
@@ -78,6 +79,6 @@ export function RankingClient({
         {loadingKey === "cota" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {loadingKey === "cota" ? "Processando..." : "Aplicar cota Sertão"}
       </Button>
-    </div>
+    </SectionCard>
   );
 }

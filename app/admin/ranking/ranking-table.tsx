@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from "react";
 import type { ResultadoStatusFinal } from "@/lib/types/database";
-import { getStatusLabel } from "@/lib/utils/status";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SectionCard, TableSection } from "@/components/layout/section-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 export type RankingTableRow = {
   id: string;
@@ -43,19 +43,6 @@ const ORDENACAO_OPCOES: { value: Ordenacao; label: string }[] = [
   { value: "AZ", label: "Projeto (A → Z)" },
   { value: "ZA", label: "Projeto (Z → A)" },
 ];
-
-function statusBadgeClass(status: string) {
-  switch (status) {
-    case "SELECIONADO":
-      return "border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:border-emerald-300/40 dark:bg-emerald-300/15 dark:text-emerald-200";
-    case "SUPLENTE":
-      return "border-violet-500/35 bg-violet-500/10 text-violet-700 dark:border-violet-300/40 dark:bg-violet-300/15 dark:text-violet-200";
-    case "NAO_SELECIONADO":
-      return "border-muted-foreground/30 bg-muted/40 text-foreground dark:border-muted-foreground/40 dark:bg-muted/30 dark:text-foreground";
-    default:
-      return "border-muted-foreground/30 bg-muted/40 text-foreground dark:border-muted-foreground/40 dark:bg-muted/30 dark:text-foreground";
-  }
-}
 
 function compareRanking(a: RankingTableRow, b: RankingTableRow) {
   const pa = a.posicao_geral ?? Number.MAX_SAFE_INTEGER;
@@ -113,7 +100,7 @@ export function RankingTable({ rows }: { rows: RankingTableRow[] }) {
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 rounded-xl border border-border/70 bg-card/60 p-3 shadow-sm md:grid-cols-3">
+      <SectionCard className="grid gap-3 md:grid-cols-3">
         <div className="space-y-2 md:col-span-3">
           <Label htmlFor="ranking-busca">Pesquisar projeto</Label>
           <Input
@@ -172,9 +159,9 @@ export function RankingTable({ rows }: { rows: RankingTableRow[] }) {
             </Button>
           ) : null}
         </div>
-      </div>
+      </SectionCard>
 
-      <div className="rounded-xl border border-border/70 bg-card/85 shadow-sm">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -205,12 +192,7 @@ export function RankingTable({ rows }: { rows: RankingTableRow[] }) {
                     </TableCell>
                     <TableCell className="tabular-nums">{notaFinalExibida.toFixed(2)}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={`whitespace-nowrap ${statusBadgeClass(r.status_final)}`}
-                      >
-                        {getStatusLabel(r.status_final)}
-                      </Badge>
+                      <StatusBadge status={r.status_final} />
                     </TableCell>
                     <TableCell>{r.enquadramento_cota ? "Sim" : "—"}</TableCell>
                   </TableRow>
@@ -225,7 +207,7 @@ export function RankingTable({ rows }: { rows: RankingTableRow[] }) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
     </div>
   );
 }

@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { SectionCard, SectionCardHeader } from "@/components/layout/section-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   actionAtribuicaoAuto,
   actionAtribuicaoManual,
@@ -12,23 +13,7 @@ import {
 } from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Check, ChevronDown, Loader2 } from "lucide-react";
-import { getStatusLabel } from "@/lib/utils/status";
 import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
-
-function statusBadgeClass(status: string) {
-  switch (status) {
-    case "INSCRITO":
-      return "border-slate-500/35 bg-slate-500/10 text-slate-700 dark:border-slate-300/35 dark:bg-slate-200/10 dark:text-slate-200";
-    case "EM_AVALIACAO":
-      return "border-violet-500/35 bg-violet-500/10 text-violet-700 dark:border-violet-300/40 dark:bg-violet-300/15 dark:text-violet-200";
-    case "AGUARDANDO_3O_AVALIADOR":
-      return "border-orange-500/35 bg-orange-500/10 text-orange-700 dark:border-orange-300/40 dark:bg-orange-300/15 dark:text-orange-200";
-    case "AVALIADO":
-      return "border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:border-emerald-300/40 dark:bg-emerald-300/15 dark:text-emerald-200";
-    default:
-      return "border-muted-foreground/30 bg-muted/40 text-foreground dark:border-muted-foreground/40 dark:bg-muted/30 dark:text-foreground";
-  }
-}
 
 type SearchableOption = {
   value: string;
@@ -127,11 +112,7 @@ function SearchableDropdown({
                       <p className="truncate pr-2 font-medium">{o.label}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {o.status ? (
-                        <Badge variant="outline" className={`max-w-[11rem] whitespace-nowrap ${statusBadgeClass(o.status)}`}>
-                          {getStatusLabel(o.status)}
-                        </Badge>
-                      ) : null}
+                      {o.status ? <StatusBadge status={o.status} /> : null}
                       {o.value === value ? <Check className="h-4 w-4 text-primary" /> : null}
                     </div>
                   </button>
@@ -207,8 +188,8 @@ export function AtribuicoesClient({
   return (
     <div className="space-y-8">
       <div className="grid gap-8 lg:grid-cols-3">
-        <div className="space-y-4 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
-          <h2 className="font-semibold">Manual</h2>
+        <SectionCard className="space-y-4">
+          <SectionCardHeader title="Manual" className="border-0 pb-0" />
           <SearchableDropdown
             label="Projeto"
             value={projetoId}
@@ -253,13 +234,13 @@ export function AtribuicoesClient({
             {isManualLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isManualLoading ? "Processando..." : "Salvar manual"}
           </Button>
-        </div>
-        <div className="space-y-4 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
-          <h2 className="font-semibold">Adicionar avaliador ao projeto</h2>
-          <p className="text-sm text-muted-foreground">
-            Adiciona um novo avaliador sem substituir os atuais (próxima ordem livre), inclusive quando alguém não puder
-            concluir no prazo.
-          </p>
+        </SectionCard>
+        <SectionCard className="space-y-4">
+          <SectionCardHeader
+            title="Adicionar avaliador ao projeto"
+            description="Adiciona um novo avaliador sem substituir os atuais (próxima ordem livre), inclusive quando alguém não puder concluir no prazo."
+            className="border-0 pb-0"
+          />
           <SearchableDropdown
             label="Projeto"
             value={projetoTerceiro}
@@ -295,13 +276,13 @@ export function AtribuicoesClient({
             {isTerceiroLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isTerceiroLoading ? "Processando..." : "Adicionar avaliador"}
           </Button>
-        </div>
-        <div className="space-y-4 rounded-xl border border-border/70 bg-card/85 p-4 shadow-sm">
-          <h2 className="font-semibold">Automático</h2>
-          <p className="text-sm text-muted-foreground">
-            Distribui {nAvaliadores} avaliador(es) por projeto sem atribuição prévia, equilibrando carga e respeitando
-            impedimentos.
-          </p>
+        </SectionCard>
+        <SectionCard className="space-y-4">
+          <SectionCardHeader
+            title="Automático"
+            description={`Distribui ${nAvaliadores} avaliador(es) por projeto sem atribuição prévia, equilibrando carga e respeitando impedimentos.`}
+            className="border-0 pb-0"
+          />
           <Button
             disabled={isAutoLoading}
             onClick={async () => {
@@ -320,7 +301,7 @@ export function AtribuicoesClient({
             {isAutoLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isAutoLoading ? "Processando..." : "Rodar automático (todos elegíveis)"}
           </Button>
-        </div>
+        </SectionCard>
       </div>
     </div>
   );

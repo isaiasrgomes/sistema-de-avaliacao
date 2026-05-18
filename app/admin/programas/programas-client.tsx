@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/layout/page-header";
+import { SectionCard } from "@/components/layout/section-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Dialog,
   DialogContent,
@@ -52,34 +53,31 @@ export function ProgramasClient({ programas }: { programas: Programa[] }) {
 
   return (
   <>
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Selecione o programa para monitorar</h1>
-        <p className="text-sm text-muted-foreground">
-          Programas finalizados abrem em modo somente leitura. Nenhum dado é apagado ao criar uma nova edição.
-        </p>
-      </div>
-      <Button type="button" onClick={() => setOpen(true)}>
-        <Plus className="mr-2 h-4 w-4" />
-        Adicionar programa
-      </Button>
-    </div>
+    <PageHeader
+      title="Selecione o programa para monitorar"
+      description="Programas finalizados abrem em modo somente leitura. Nenhum dado é apagado ao criar uma nova edição."
+      actions={
+        <Button type="button" onClick={() => setOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Adicionar programa
+        </Button>
+      }
+    />
 
     <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {programas.map((p) => (
-        <Card key={p.id} className="border-border/70 bg-card/85">
-          <CardHeader className="pb-2">
-            <div className="flex items-start justify-between gap-2">
-              <CardTitle className="text-base leading-snug">{p.nome}</CardTitle>
-              <Badge variant={p.status === "FINALIZADO" ? "secondary" : "default"}>
-                {p.status === "FINALIZADO" ? "🟢 Finalizado" : "🟡 Em processo"}
-              </Badge>
-            </div>
-            <CardDescription>
-              {labelTipoPrograma(p.tipo)} · {p.edital}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-xs text-muted-foreground">
+        <SectionCard key={p.id} className="space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="text-base font-semibold leading-snug">{p.nome}</h2>
+            <StatusBadge
+              status={p.status === "FINALIZADO" ? "FINALIZADO" : "EM_PROCESSO"}
+              label={p.status === "FINALIZADO" ? "Finalizado" : "Em processo"}
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {labelTipoPrograma(p.tipo)} · {p.edital}
+          </p>
+          <div className="space-y-3 text-xs text-muted-foreground">
             <p>
               Programa: {fmtDate(p.data_inicio)} — {fmtDate(p.data_fim)}
             </p>
@@ -90,8 +88,8 @@ export function ProgramasClient({ programas }: { programas: Programa[] }) {
             <Button type="button" className="w-full" variant="outline" onClick={() => selecionar(p.id)}>
               {p.status === "FINALIZADO" ? "Visualizar (somente leitura)" : "Monitorar programa"}
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </SectionCard>
       ))}
     </div>
 

@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/layout/section-card";
 import { SertaoMakerBrand } from "@/components/brand-logo";
 import { toast } from "sonner";
 import { destinoAposLogin } from "@/lib/auth/destino-pos-login";
@@ -91,13 +91,13 @@ export function LoginForm() {
     <div className="min-h-screen bg-background">
       <div className="grid min-h-screen lg:grid-cols-2">
         <section className="order-2 flex items-center justify-center px-4 py-8 sm:px-8 lg:order-2 lg:px-12">
-          <Card className="w-full max-w-md border-border/70 bg-card/90 shadow-lg backdrop-blur">
-            <CardHeader className="space-y-4">
+          <SectionCard className="w-full max-w-md shadow-card">
+            <div className="space-y-4 border-b border-border/60 pb-4">
               <SertaoMakerBrand variant="full" align="center" className="justify-center" />
-              <CardTitle className="sr-only">Entrar</CardTitle>
-              <CardDescription>Acesso ao sistema de avaliação</CardDescription>
-            </CardHeader>
-            <CardContent>
+              <h1 className="sr-only">Entrar</h1>
+              <p className="text-center text-sm text-muted-foreground">Acesso ao sistema de avaliação</p>
+            </div>
+            <div className="pt-4">
               <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
                 <div className="space-y-2">
                   <Label htmlFor="email">E-mail</Label>
@@ -135,8 +135,8 @@ export function LoginForm() {
                   </Link>
                 </p>
               </form>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionCard>
         </section>
 
         <section className="order-1 relative hidden overflow-hidden lg:order-1 lg:flex">

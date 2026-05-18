@@ -14,7 +14,6 @@ export function BackNav({
   className,
 }: {
   sectionRoot: Section;
-  /** Texto do atalho para a raiz da área (ex.: Monitoramento, Minhas avaliações). */
   primaryLabel: string;
   className?: string;
 }) {
@@ -23,20 +22,16 @@ export function BackNav({
   const root = sectionRoot;
   const isRoot = normalized === root;
 
+  if (isRoot) return null;
+
   return (
-    <div className={cn("mb-4 flex flex-wrap items-center gap-2 border-b border-border/60 pb-3", className)}>
-      {isRoot ? (
-        <div />
-      ) : (
-        <>
-          <Button variant="outline" size="sm" className="gap-1.5 border-border/80 bg-card/70" asChild>
-            <Link href={root}>
-              <ArrowLeft className="h-4 w-4" />
-              {primaryLabel}
-            </Link>
-          </Button>
-        </>
-      )}
+    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+      <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground" asChild>
+        <Link href={root}>
+          <ArrowLeft className="h-4 w-4" />
+          {primaryLabel}
+        </Link>
+      </Button>
     </div>
   );
 }

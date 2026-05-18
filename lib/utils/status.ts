@@ -10,6 +10,7 @@ const STATUS_LABELS: Record<string, string> = {
   PENDENTE: "Pendente",
   CONCLUIDA: "Concluída",
   CONCLUIDO: "Concluído",
+  EM_PROCESSO: "Em processo",
 };
 
 function normalizeStatus(status?: string | null) {

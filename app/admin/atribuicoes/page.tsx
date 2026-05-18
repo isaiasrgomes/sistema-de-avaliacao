@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/layout/page-header";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { AtribuicoesClient } from "./atribuicoes-client";
 
@@ -13,14 +14,11 @@ export default async function AtribuicoesPage() {
   const { data: avaliadores } = await supabase.from("avaliadores").select("id, nome, email").eq("ativo", true).order("nome");
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Atribuições</h1>
-        <p className="text-sm text-muted-foreground">
-          Modo manual com {nAvaliadores} avaliador(es) por proposta (definido em Programa), distribuição automática e
-          adição de novos avaliadores quando necessário.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Atribuições"
+        description={`Modo manual com ${nAvaliadores} avaliador(es) por proposta (definido em Programa), distribuição automática e adição de novos avaliadores quando necessário.`}
+      />
       <AtribuicoesClient
         projetos={projetos ?? []}
         avaliadores={avaliadores ?? []}

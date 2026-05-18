@@ -6,10 +6,11 @@ import Link from "next/link";
 
 type PendenciaTipo = "SEM_ATRIBUICAO" | "SEM_AVALIACOES" | "AVALIACAO_INCOMPLETA";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/layout/section-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { DashboardMetricasClient } from "./dashboard-metricas-client";
 import { AlertTriangle, BarChart3, CheckCircle2, Clock3, ClipboardList, FileText, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { projetoEmAvaliacaoAtiva, projetoTeveAvaliacaoEntregue } from "@/lib/utils/projeto-metricas";
 
 export default async function AdminDashboardPage() {
@@ -128,7 +129,7 @@ export default async function AdminDashboardPage() {
           consulta. Métricas refletem o resultado encerrado desta edição.
         </p>
       ) : null}
-      <div className="rounded-xl border border-border/70 bg-gradient-to-r from-card/90 via-card/80 to-primary/5 p-5 shadow-sm">
+      <SectionCard className="bg-gradient-to-r from-card via-card to-primary/5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">Monitoramento</h1>
@@ -143,9 +144,9 @@ export default async function AdminDashboardPage() {
             <Link href="/admin/manual">Abrir manual da plataforma</Link>
           </Button>
         </div>
-      </div>
+      </SectionCard>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-border/70 bg-card/85 shadow-sm">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Inscritos</CardTitle>
           </CardHeader>
@@ -154,7 +155,7 @@ export default async function AdminDashboardPage() {
             <FileText className="h-5 w-5 text-muted-foreground" />
           </CardContent>
         </Card>
-        <Card className="border-border/70 bg-card/85 shadow-sm">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Desclassificados</CardTitle>
           </CardHeader>
@@ -163,7 +164,7 @@ export default async function AdminDashboardPage() {
             <AlertTriangle className="h-5 w-5 text-rose-500" />
           </CardContent>
         </Card>
-        <Card className="border-border/70 bg-card/85 shadow-sm">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Avaliados</CardTitle>
           </CardHeader>
@@ -172,7 +173,7 @@ export default async function AdminDashboardPage() {
             <CheckCircle2 className="h-5 w-5 text-emerald-500" />
           </CardContent>
         </Card>
-        <Card className="border-border/70 bg-card/85 shadow-sm">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Em avaliação</CardTitle>
           </CardHeader>
@@ -184,7 +185,7 @@ export default async function AdminDashboardPage() {
       </div>
       <DashboardMetricasClient projetos={projetosComMetrica} progressoPct={pct} />
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="border-border/70 bg-card/85 shadow-sm">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <ClipboardList className="h-4 w-4 text-amber-500" />
@@ -198,18 +199,18 @@ export default async function AdminDashboardPage() {
               <p className="text-sm text-muted-foreground">Nenhum projeto elegível com pendência neste recorte.</p>
             ) : (
               pendenciasProjetos.map((row) => {
+                const status =
+                  row.tipo === "SEM_ATRIBUICAO"
+                    ? "PENDENTE"
+                    : row.tipo === "SEM_AVALIACOES"
+                      ? "EM_ANDAMENTO"
+                      : "AGUARDANDO";
                 const label =
                   row.tipo === "SEM_ATRIBUICAO"
                     ? "Sem atribuição"
                     : row.tipo === "SEM_AVALIACOES"
                       ? "Sem avaliações"
                       : "Avaliação incompleta";
-                const badgeClass =
-                  row.tipo === "SEM_ATRIBUICAO"
-                    ? "border-muted-foreground/40 bg-muted/50"
-                    : row.tipo === "SEM_AVALIACOES"
-                      ? "border-amber-500/40 bg-amber-500/15 text-amber-900 dark:text-amber-100"
-                      : "border-orange-500/40 bg-orange-500/10 text-orange-900 dark:text-orange-100";
                 return (
                   <div
                     key={row.id}
@@ -218,16 +219,14 @@ export default async function AdminDashboardPage() {
                     <Link href={`/admin/projetos/${row.id}`} className="min-w-0 flex-1 text-sm font-medium text-primary hover:underline">
                       {row.nome_projeto}
                     </Link>
-                    <Badge variant="outline" className={`shrink-0 whitespace-nowrap ${badgeClass}`}>
-                      {label}
-                    </Badge>
+                    <StatusBadge status={status} label={label} className="shrink-0" />
                   </div>
                 );
               })
             )}
           </CardContent>
         </Card>
-        <Card className="border-border/70 bg-card/85 shadow-sm">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Users className="h-4 w-4 text-rose-500" />
