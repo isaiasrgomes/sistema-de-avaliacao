@@ -183,11 +183,15 @@ export const config = {
   matcher: [
     "/admin/:path*",
     "/avaliador/:path*",
+    "/login",
+    "/login/:path*",
     "/cadastro",
     "/cadastro/:path*",
     "/cadastro-recusado",
     "/cadastro-recusado/:path*",
     "/aguardando-aprovacao",
     "/aguardando-aprovacao/:path*",
+    "/redefinir-senha",
+    "/auth/:path*",
   ],
 };

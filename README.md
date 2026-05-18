@@ -87,6 +87,8 @@ Se no futuro você publicar em um domínio com subpasta (por exemplo, outro host
 
 Mantenha as políticas RLS ativas; em **Auth → URL Configuration**, inclua a URL de produção e os callbacks `https://SEU_DOMINIO/auth/confirm` e `https://SEU_DOMINIO/auth/callback` (legado).
 
+A inscrição pública de projetos fica em **`/inscricao`** (sem login). A página inicial (`/`) direciona para inscrição, coordenação e área do avaliador.
+
 ### CI
 
 O workflow `.github/workflows/ci.yml` executa `lint` e `build` em cada push/PR para a branch `main` ou `master`.

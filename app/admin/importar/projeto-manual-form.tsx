@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { projetoManualSchema } from "@/lib/validations/projeto-manual";
 import { actionCadastrarProjetoManual } from "@/app/actions/admin";
+import { actionInscricaoPublica } from "@/app/actions/inscricao-publica";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,8 +41,17 @@ function defaultTimestampLocal() {
   return d.toISOString().slice(0, 16);
 }
 
-export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; ufs: string[] }) {
+export function ProjetoInscricaoForm({
+  municipios,
+  ufs,
+  variant = "admin",
+}: {
+  municipios: string[];
+  ufs: string[];
+  variant?: "admin" | "public";
+}) {
   type ProjetoManualFormInput = z.input<typeof projetoManualSchema>;
+  const isPublic = variant === "public";
 
   const defaults = useMemo<ProjetoManualFormInput>(
     () => ({
@@ -79,12 +89,11 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
   });
 
   return (
-    <Card>
+    <Card className={isPublic ? "border-border/70 bg-card/85 shadow-sm" : undefined}>
       <CardHeader>
-        <CardTitle>Cadastro manual</CardTitle>
+        <CardTitle>{isPublic ? "Inscrição de projeto" : "Cadastro manual"}</CardTitle>
         <CardDescription>
-          <strong>Cota Sertão</strong> é definida automaticamente conforme o município está na tabela de municípios do
-          Sertão. Se já existir projeto com o mesmo CPF e
+          Se já existir projeto com o mesmo CPF e
           mesmo nome do projeto, o registro será <strong>atualizado</strong>.
         </CardDescription>
       </CardHeader>
@@ -93,8 +102,14 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
           className="space-y-4"
           onSubmit={form.handleSubmit(async (data) => {
             try {
-              const r = await actionCadastrarProjetoManual(data);
-              toast.success(r.tipo === "inserido" ? "Projeto inscrito com sucesso." : "Projeto atualizado (mesmo CPF + nome).");
+              const r = isPublic
+                ? await actionInscricaoPublica(data)
+                : await actionCadastrarProjetoManual(data);
+              const msgInserido = isPublic ? "Inscrição enviada com sucesso." : "Projeto inscrito com sucesso.";
+              const msgAtualizado = isPublic
+                ? "Inscrição atualizada (mesmo CPF e nome de projeto)."
+                : "Projeto atualizado (mesmo CPF + nome).";
+              toast.success(r.tipo === "inserido" ? msgInserido : msgAtualizado);
               form.reset({ ...defaults, timestamp_submissao: defaultTimestampLocal() });
             } catch (e: unknown) {
               toast.error(getUserFriendlyErrorMessage(e, "Não foi possível salvar a inscrição."));
@@ -194,14 +209,14 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
               </select>
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="equipe_descricao">Equipe empreendedora: descrição *</Label>
+              <Label htmlFor="equipe_descricao">Descreva a equipe (nome, formação/área e papel de cada integrante): *</Label>
               <Textarea id="equipe_descricao" rows={4} {...form.register("equipe_descricao")} />
               {form.formState.errors.equipe_descricao && (
                 <p className="text-xs text-destructive">{form.formState.errors.equipe_descricao.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="equipe_quantidade_membros">Quantidade de membros da equipe *</Label>
+              <Label htmlFor="equipe_quantidade_membros">Quantidade de membros na equipe (incluindo você): *</Label>
               <Input
                 id="equipe_quantidade_membros"
                 type="number"
@@ -214,7 +229,7 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="equipe_tempo_dedicacao">Tempo dedicado ao projeto *</Label>
+              <Label htmlFor="equipe_tempo_dedicacao">Quanto tempo a equipe dedica ou dedicará ao projeto?:  *</Label>
               <select
                 id="equipe_tempo_dedicacao"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -228,7 +243,7 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="equipe_participa_encontros">Participa de encontros obrigatórios? *</Label>
+              <Label htmlFor="equipe_participa_encontros">Você ou sua equipe pode participar de encontros obrigatórios (online) às quartas-feiras? *</Label>
               <select
                 id="equipe_participa_encontros"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -242,14 +257,14 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
               </select>
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="mercado_problema">Problema/oportunidade de mercado *</Label>
+              <Label htmlFor="mercado_problema">Qual problema ou necessidade a sua solução busca resolver? *</Label>
               <Textarea id="mercado_problema" rows={4} {...form.register("mercado_problema")} />
               {form.formState.errors.mercado_problema && (
                 <p className="text-xs text-destructive">{form.formState.errors.mercado_problema.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="mercado_conversou_clientes">Você já conversou com potenciais clientes? *</Label>
+              <Label htmlFor="mercado_conversou_clientes">Você já conversou com potenciais clientes sobre esse problema? *</Label>
               <select
                 id="mercado_conversou_clientes"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -263,21 +278,21 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
               </select>
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="mercado_perfil_clientes">Primeiros clientes (perfil) *</Label>
+              <Label htmlFor="mercado_perfil_clientes">Quem seriam seus primeiros clientes? Descreva o perfil. *</Label>
               <Textarea id="mercado_perfil_clientes" rows={3} {...form.register("mercado_perfil_clientes")} />
               {form.formState.errors.mercado_perfil_clientes && (
                 <p className="text-xs text-destructive">{form.formState.errors.mercado_perfil_clientes.message}</p>
               )}
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="mercado_estimativa_publico">Estimativa de público interessado *</Label>
+              <Label htmlFor="mercado_estimativa_publico">Você tem alguma estimativa de quantas pessoas poderiam se interessar pela sua solução? *</Label>
               <Input id="mercado_estimativa_publico" {...form.register("mercado_estimativa_publico")} />
               {form.formState.errors.mercado_estimativa_publico && (
                 <p className="text-xs text-destructive">{form.formState.errors.mercado_estimativa_publico.message}</p>
               )}
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="produto_maturidade">Produto/Solução: estágio de maturidade *</Label>
+              <Label htmlFor="produto_maturidade">Qual é o estágio de maturidade do seu projeto? *</Label>
               <select
                 id="produto_maturidade"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -294,21 +309,21 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
               )}
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="produto_descricao">Produto/Solução: descrição detalhada *</Label>
+              <Label htmlFor="produto_descricao">Descreva o seu produto, serviço ou processo com mais detalhes: *</Label>
               <Textarea id="produto_descricao" rows={4} {...form.register("produto_descricao")} />
               {form.formState.errors.produto_descricao && (
                 <p className="text-xs text-destructive">{form.formState.errors.produto_descricao.message}</p>
               )}
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="tecnologia_diferencial">Tecnologia e diferencial *</Label>
+              <Label htmlFor="tecnologia_diferencial">Como o seu produto, serviço ou processo se diferencia dos demais existentes? *</Label>
               <Textarea id="tecnologia_diferencial" rows={4} {...form.register("tecnologia_diferencial")} />
               {form.formState.errors.tecnologia_diferencial && (
                 <p className="text-xs text-destructive">{form.formState.errors.tecnologia_diferencial.message}</p>
               )}
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="setor_aplicacao_lista">Setor de aplicação da solução (dropdown) *</Label>
+              <Label htmlFor="setor_aplicacao_lista">Setor de aplicação da solução (selecione uma opção ou digite "Outro" e descreva): *</Label>
               <select
                 id="setor_aplicacao_lista"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -340,19 +355,24 @@ export function ProjetoManualForm({ municipios, ufs }: { municipios: string[]; u
                 <p className="text-xs text-destructive">{form.formState.errors.url_video_pitch.message}</p>
               )}
             </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="timestamp_submissao">Data e hora da submissão *</Label>
-              <Input id="timestamp_submissao" type="datetime-local" {...form.register("timestamp_submissao")} />
-              {form.formState.errors.timestamp_submissao && (
-                <p className="text-xs text-destructive">{form.formState.errors.timestamp_submissao.message}</p>
-              )}
-            </div>
+            {!isPublic && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="timestamp_submissao">Data e hora da submissão *</Label>
+                <Input id="timestamp_submissao" type="datetime-local" {...form.register("timestamp_submissao")} />
+                {form.formState.errors.timestamp_submissao && (
+                  <p className="text-xs text-destructive">{form.formState.errors.timestamp_submissao.message}</p>
+                )}
+              </div>
+            )}
           </div>
           <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Salvando…" : "Salvar inscrição"}
+            {form.formState.isSubmitting ? "Salvando…" : isPublic ? "Enviar inscrição" : "Salvar inscrição"}
           </Button>
         </form>
       </CardContent>
     </Card>
   );
 }
+
+/** @deprecated Use ProjetoInscricaoForm */
+export const ProjetoManualForm = ProjetoInscricaoForm;
