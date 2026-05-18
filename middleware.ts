@@ -146,6 +146,14 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       return NextResponse.redirect(new URL("/login?next=/admin", request.url));
     }
+    const programaCookie = request.cookies.get("programa_monitor_id")?.value;
+    if (
+      !programaCookie &&
+      path !== "/admin/programas" &&
+      !path.startsWith("/admin/programas/")
+    ) {
+      return NextResponse.redirect(new URL("/admin/programas", request.url));
+    }
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")

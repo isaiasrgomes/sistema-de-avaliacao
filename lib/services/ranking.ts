@@ -21,11 +21,13 @@ function compareDesempate(a: LinhaRanking, b: LinhaRanking): number {
 }
 
 /** Projetos elegíveis: não desclassificados e sem pendência de 3º. */
-export async function montarLinhasRanking(supabase: SupabaseClient): Promise<LinhaRanking[]> {
-  const { data: projetos, error: e1 } = await supabase
-    .from("projetos")
-    .select("*")
-    .neq("status", "DESCLASSIFICADO");
+export async function montarLinhasRanking(
+  supabase: SupabaseClient,
+  programaId?: string | null
+): Promise<LinhaRanking[]> {
+  let q = supabase.from("projetos").select("*").neq("status", "DESCLASSIFICADO");
+  if (programaId) q = q.eq("programa_id", programaId);
+  const { data: projetos, error: e1 } = await q;
 
   if (e1 || !projetos) return [];
 
@@ -100,13 +102,14 @@ export async function montarLinhasRanking(supabase: SupabaseClient): Promise<Lin
   return linhas;
 }
 
-export async function calcularResultados(supabase: SupabaseClient) {
-  const linhas = await montarLinhasRanking(supabase);
+export async function calcularResultados(supabase: SupabaseClient, programaId?: string | null) {
+  const linhas = await montarLinhasRanking(supabase, programaId);
   let pos = 1;
   for (const l of linhas) {
     await supabase.from("resultados").upsert(
       {
         projeto_id: l.projeto.id,
+        programa_id: programaId ?? l.projeto.programa_id ?? null,
         nota_final: l.nota_final,
         media_equipe: l.media_equipe,
         media_mercado: l.media_mercado,
@@ -128,12 +131,12 @@ export async function calcularResultados(supabase: SupabaseClient) {
 export async function aplicarCota(
   supabase: SupabaseClient,
   totalVagas: number,
-  suplentesExtras = 15
+  suplentesExtras = 15,
+  programaId?: string | null
 ) {
-  const { data: res } = await supabase
-    .from("resultados")
-    .select("*, projetos(*)")
-    .order("posicao_geral", { ascending: true, nullsFirst: false });
+  let rq = supabase.from("resultados").select("*, projetos(*)").order("posicao_geral", { ascending: true, nullsFirst: false });
+  if (programaId) rq = rq.eq("programa_id", programaId);
+  const { data: res } = await rq;
 
   if (!res?.length) return { selecionados: 0 };
 

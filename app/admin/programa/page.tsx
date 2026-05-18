@@ -1,15 +1,12 @@
 import { createServerSupabase } from "@/lib/supabase/server";
+import { getProgramaMonitorForPage } from "@/lib/programa/page-helper";
+import { isProgramaFinalizado } from "@/lib/programa/context";
 import { ProgramaClient } from "./programa-client";
 
 export default async function ProgramaPage() {
   const supabase = await createServerSupabase();
-  const { data: cfg } = await supabase
-    .from("app_config")
-    .select(
-      "programa_nome, avaliacoes_inicio, avaliacoes_fim, prorrogacao_fim, prorrogacao_utilizada, avaliadores_por_projeto"
-    )
-    .eq("id", 1)
-    .single();
+  const programa = await getProgramaMonitorForPage(supabase);
+  const readonly = isProgramaFinalizado(programa);
 
   return (
     <div className="space-y-5">
@@ -20,14 +17,20 @@ export default async function ProgramaPage() {
           final. Lembretes por e-mail usam Resend (variáveis RESEND_API_KEY e EMAIL_FROM).
         </p>
       </div>
+      {readonly ? (
+        <p className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          Programa finalizado — configurações em somente leitura.
+        </p>
+      ) : null}
       <ProgramaClient
+        readonly={readonly}
         initial={{
-          programa_nome: cfg?.programa_nome ?? null,
-          avaliacoes_inicio: cfg?.avaliacoes_inicio ?? null,
-          avaliacoes_fim: cfg?.avaliacoes_fim ?? null,
-          prorrogacao_fim: cfg?.prorrogacao_fim ?? null,
-          prorrogacao_utilizada: cfg?.prorrogacao_utilizada ?? false,
-          avaliadores_por_projeto: cfg?.avaliadores_por_projeto ?? 2,
+          programa_nome: programa.nome,
+          avaliacoes_inicio: programa.avaliacoes_inicio,
+          avaliacoes_fim: programa.avaliacoes_fim,
+          prorrogacao_fim: programa.prorrogacao_fim,
+          prorrogacao_utilizada: programa.prorrogacao_utilizada,
+          avaliadores_por_projeto: programa.avaliadores_por_projeto,
         }}
       />
     </div>

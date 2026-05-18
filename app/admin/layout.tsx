@@ -1,6 +1,8 @@
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { BackNav } from "@/components/back-nav";
+import { ProgramaMonitorBar } from "@/components/programa-monitor-bar";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { getProgramaMonitorIdFromCookie, loadProgramaById } from "@/lib/programa/context";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: profile } = user ? await supabase.from("profiles").select("nome").eq("id", user.id).maybeSingle() : { data: null };
 
   const displayName = profile?.nome ?? user?.user_metadata?.nome ?? "Usuário";
+  const programaId = await getProgramaMonitorIdFromCookie();
+  const programa = programaId ? await loadProgramaById(supabase, programaId) : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-transparent md:flex-row">
@@ -19,6 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="min-w-0 flex-1 overflow-auto">
         <div className="min-h-screen bg-gradient-to-b from-transparent via-background/80 to-background/95 px-4 py-5 sm:px-6 lg:px-8">
           <BackNav sectionRoot="/admin" primaryLabel="Monitoramento" />
+          {programa ? <ProgramaMonitorBar programa={programa} /> : null}
           {children}
         </div>
       </div>

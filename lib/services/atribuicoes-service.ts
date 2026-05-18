@@ -23,7 +23,15 @@ export async function contarCargaAvaliador(supabase: SupabaseClient, avaliadorId
   return count ?? 0;
 }
 
-export async function getAvaliadoresPorProjetoConfig(supabase: SupabaseClient): Promise<number> {
+export async function getAvaliadoresPorProjetoConfig(
+  supabase: SupabaseClient,
+  programaId?: string | null
+): Promise<number> {
+  if (programaId) {
+    const { data: prog } = await supabase.from("programas").select("avaliadores_por_projeto").eq("id", programaId).maybeSingle();
+    const n = prog?.avaliadores_por_projeto ?? 2;
+    return Math.min(15, Math.max(1, n));
+  }
   const { data: cfg } = await supabase.from("app_config").select("avaliadores_por_projeto").eq("id", 1).maybeSingle();
   const n = cfg?.avaliadores_por_projeto ?? 2;
   return Math.min(15, Math.max(1, n));

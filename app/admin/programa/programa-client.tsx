@@ -32,7 +32,9 @@ function formatPtBrDateTime(value: string | null): string {
 
 export function ProgramaClient({
   initial,
+  readonly = false,
 }: {
+  readonly?: boolean;
   initial: {
     programa_nome: string | null;
     avaliacoes_inicio: string | null;
@@ -84,7 +86,7 @@ export function ProgramaClient({
         </div>
         <Button
           className="mt-4"
-          disabled={loading !== null}
+          disabled={loading !== null || readonly}
           onClick={async () => {
             try {
               setLoading("save");

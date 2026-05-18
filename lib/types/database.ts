@@ -15,6 +15,8 @@ export type ProfileRole = "COORDENADOR" | "AVALIADOR";
 export type ImpedimentoTipo = "SOCIETARIO" | "PROFISSIONAL" | "PARENTESCO" | "OUTRO";
 export type DeclaradoPor = "AVALIADOR" | "COORDENADOR";
 export type FasePublicacao = "PRELIMINAR" | "FINAL";
+export type ProgramaTipo = "INCUBACAO" | "PRE_INCUBACAO";
+export type ProgramaStatus = "EM_PROCESSO" | "FINALIZADO";
 
 export interface Profile {
   id: string;
@@ -56,6 +58,7 @@ export interface Projeto {
   timestamp_submissao: string;
   status: ProjetoStatus;
   motivo_desclassificacao: string | null;
+  programa_id: string | null;
   criado_em: string;
 }
 
@@ -115,5 +118,6 @@ export interface Resultado {
   posicao_sertao: number | null;
   status_final: ResultadoStatusFinal;
   enquadramento_cota: boolean;
+  programa_id: string | null;
   gerado_em: string;
 }

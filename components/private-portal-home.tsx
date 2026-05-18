@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SertaoMakerBrand } from "@/components/brand-logo";
-import { ArrowRight, ClipboardPen, ShieldCheck, Users2 } from "lucide-react";
+import { ArrowRight, ClipboardPen, History, ShieldCheck, Users2 } from "lucide-react";
 
 export function PrivatePortalHome() {
   const links = [
+    {
+      href: "/historico-programas",
+      title: "Histórico de programas",
+      description: "Consulte resultados finais de edições já encerradas.",
+      icon: History,
+    },
     {
       href: "/inscricao",
       title: "Inscrição de projetos",

@@ -14,6 +14,12 @@ import {
   listarAvaliadoresComPendencias,
 } from "@/lib/services/email-reminders";
 import { revalidatePath } from "next/cache";
+import {
+  assertProgramaEditavel,
+  getProgramaMonitorIdFromCookie,
+  loadProgramaById,
+} from "@/lib/programa/context";
+import { programaParaConfigPrazo } from "@/lib/programa/types";
 
 async function requireCoord() {
   const supabase = await createServerSupabase();
@@ -23,7 +29,12 @@ async function requireCoord() {
   if (!user) throw new Error("Não autenticado");
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (profile?.role !== "COORDENADOR") throw new Error("Acesso negado");
-  return { supabase, user };
+  const programaId = await getProgramaMonitorIdFromCookie();
+  if (!programaId) throw new Error("Selecione um programa em /admin/programas.");
+  const programa = await loadProgramaById(supabase, programaId);
+  if (!programa) throw new Error("Programa selecionado não encontrado.");
+  assertProgramaEditavel(programa);
+  return { supabase, user, programa };
 }
 
 async function notificarNovasAtribuicoes(
@@ -110,8 +121,8 @@ export async function actionCadastrarProjetoManual(data: unknown) {
     const msg = parsed.error.flatten().fieldErrors;
     throw new Error(Object.values(msg).flat().filter(Boolean).join(" ") || "Dados inválidos");
   }
-  const { supabase, user } = await requireCoord();
-  const res = await cadastrarOuAtualizarProjetoManual(supabase, parsed.data);
+  const { supabase, user, programa } = await requireCoord();
+  const res = await cadastrarOuAtualizarProjetoManual(supabase, parsed.data, programa.id);
   if (!res.ok) throw new Error(res.erro);
   await logAuditoria(supabase, {
     usuario_id: user.id,
@@ -167,8 +178,8 @@ export async function actionReclassificar(projetoId: string) {
 }
 
 export async function actionSalvarVagas(totalVagas: number) {
-  const { supabase, user } = await requireCoord();
-  await supabase.from("app_config").update({ total_vagas: totalVagas, atualizado_em: new Date().toISOString() }).eq("id", 1);
+  const { supabase, user, programa } = await requireCoord();
+  await supabase.from("programas").update({ total_vagas: totalVagas }).eq("id", programa.id);
   await logAuditoria(supabase, {
     usuario_id: user.id,
     acao: "CONFIG_VAGAS",
@@ -179,8 +190,8 @@ export async function actionSalvarVagas(totalVagas: number) {
 }
 
 export async function actionGerarRanking() {
-  const { supabase, user } = await requireCoord();
-  const r = await calcularResultados(supabase);
+  const { supabase, user, programa } = await requireCoord();
+  const r = await calcularResultados(supabase, programa.id);
   await logAuditoria(supabase, {
     usuario_id: user.id,
     acao: "GERAR_RANKING",
@@ -192,10 +203,8 @@ export async function actionGerarRanking() {
 }
 
 export async function actionAplicarCota() {
-  const { supabase, user } = await requireCoord();
-  const { data: cfg } = await supabase.from("app_config").select("total_vagas").eq("id", 1).single();
-  const n = cfg?.total_vagas ?? 25;
-  const r = await aplicarCota(supabase, n);
+  const { supabase, user, programa } = await requireCoord();
+  const r = await aplicarCota(supabase, programa.total_vagas, 15, programa.id);
   await logAuditoria(supabase, {
     usuario_id: user.id,
     acao: "APLICAR_COTA",
@@ -207,22 +216,12 @@ export async function actionAplicarCota() {
 }
 
 export async function actionAtribuicaoManual(projetoId: string, avaliadorIds: string[]) {
-  const { supabase, user } = await requireCoord();
-  const { data: cfgPrazo } = await supabase
-    .from("app_config")
-    .select("avaliacoes_fim, prorrogacao_fim")
-    .eq("id", 1)
-    .maybeSingle();
-  const fim = cfgPrazo ? prazoFimEfetivo({
-    avaliacoes_inicio: null,
-    avaliacoes_fim: cfgPrazo.avaliacoes_fim,
-    prorrogacao_fim: cfgPrazo.prorrogacao_fim,
-    prorrogacao_utilizada: !!cfgPrazo.prorrogacao_fim,
-  }) : null;
+  const { supabase, user, programa } = await requireCoord();
+  const fim = prazoFimEfetivo(programaParaConfigPrazo(programa));
   if (fim && new Date() > fim) {
     throw new Error(`Atribuição indisponível: o prazo de avaliações encerrou em ${fim.toLocaleString("pt-BR")}.`);
   }
-  const n = await getAvaliadoresPorProjetoConfig(supabase);
+  const n = await getAvaliadoresPorProjetoConfig(supabase, programa.id);
   const ids = avaliadorIds.map((x) => x.trim()).filter(Boolean);
   if (ids.length !== n) {
     throw new Error(`Selecione exatamente ${n} avaliador(es) (configuração atual do programa).`);
@@ -349,22 +348,22 @@ export async function actionSalvarPrograma(input: {
   avaliacoes_fim: string | null;
   avaliadores_por_projeto: number;
 }) {
-  const { supabase, user } = await requireCoord();
+  const { supabase, user, programa } = await requireCoord();
   const n = Math.min(15, Math.max(1, Math.floor(Number(input.avaliadores_por_projeto) || 2)));
   await supabase
-    .from("app_config")
+    .from("programas")
     .update({
-      programa_nome: input.programa_nome?.trim() || null,
+      nome: input.programa_nome?.trim() || programa.nome,
       avaliacoes_inicio: input.avaliacoes_inicio || null,
       avaliacoes_fim: input.avaliacoes_fim || null,
       avaliadores_por_projeto: n,
-      atualizado_em: new Date().toISOString(),
     })
-    .eq("id", 1);
+    .eq("id", programa.id);
   await logAuditoria(supabase, {
     usuario_id: user.id,
     acao: "CONFIG_PROGRAMA",
-    entidade: "app_config",
+    entidade: "programas",
+    entidade_id: programa.id,
     detalhes: { avaliadores_por_projeto: n },
   });
   revalidatePath("/admin/programa");
@@ -373,29 +372,24 @@ export async function actionSalvarPrograma(input: {
 
 /** Prorroga o fim uma única vez; após isso `prorrogacao_utilizada` fica true. */
 export async function actionProrrogarPrazo(novaDataFimISO: string) {
-  const { supabase, user } = await requireCoord();
-  const { data: cfg } = await supabase
-    .from("app_config")
-    .select("prorrogacao_utilizada, avaliacoes_fim")
-    .eq("id", 1)
-    .single();
-  if (cfg?.prorrogacao_utilizada) {
+  const { supabase, user, programa } = await requireCoord();
+  if (programa.prorrogacao_utilizada) {
     throw new Error("A prorrogação já foi utilizada. Não é possível alterar novamente.");
   }
   const fim = new Date(novaDataFimISO);
   if (Number.isNaN(fim.getTime())) throw new Error("Data inválida.");
   await supabase
-    .from("app_config")
+    .from("programas")
     .update({
       prorrogacao_fim: fim.toISOString(),
       prorrogacao_utilizada: true,
-      atualizado_em: new Date().toISOString(),
     })
-    .eq("id", 1);
+    .eq("id", programa.id);
   await logAuditoria(supabase, {
     usuario_id: user.id,
     acao: "PRORROGACAO_PRAZO_AVALIACOES",
-    entidade: "app_config",
+    entidade: "programas",
+    entidade_id: programa.id,
     detalhes: { novaDataFim: fim.toISOString() },
   });
   revalidatePath("/admin/programa");

@@ -1,4 +1,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
+import { ProgramaFinalizarBanner } from "@/components/programa-finalizar-banner";
+import { isProgramaFinalizado, prazoAvaliacaoEncerrado } from "@/lib/programa/context";
+import { getProgramaMonitorForPage } from "@/lib/programa/page-helper";
 import Link from "next/link";
 
 type PendenciaTipo = "SEM_ATRIBUICAO" | "SEM_AVALIACOES" | "AVALIACAO_INCOMPLETA";
@@ -10,16 +13,27 @@ import { Badge } from "@/components/ui/badge";
 
 export default async function AdminDashboardPage() {
   const supabase = await createServerSupabase();
+  const programa = await getProgramaMonitorForPage(supabase);
+  const pid = programa.id;
 
-  const { count: total } = await supabase.from("projetos").select("*", { count: "exact", head: true });
+  const { count: total } = await supabase
+    .from("projetos")
+    .select("*", { count: "exact", head: true })
+    .eq("programa_id", pid);
   const { count: desc } = await supabase
     .from("projetos")
     .select("*", { count: "exact", head: true })
+    .eq("programa_id", pid)
     .eq("status", "DESCLASSIFICADO");
-  const { count: aval } = await supabase.from("projetos").select("*", { count: "exact", head: true }).eq("status", "AVALIADO");
+  const { count: aval } = await supabase
+    .from("projetos")
+    .select("*", { count: "exact", head: true })
+    .eq("programa_id", pid)
+    .eq("status", "AVALIADO");
   const { count: em } = await supabase
     .from("projetos")
     .select("*", { count: "exact", head: true })
+    .eq("programa_id", pid)
     .eq("status", "EM_AVALIACAO");
 
   const { data: pends } = await supabase
@@ -36,7 +50,10 @@ export default async function AdminDashboardPage() {
 
   const eleg = Math.max(0, (total ?? 0) - (desc ?? 0));
   const pct = eleg > 0 ? Math.round(((aval ?? 0) / eleg) * 100) : 0;
-  const { data: projetos } = await supabase.from("projetos").select("id, nome_projeto, municipio, fase, status, timestamp_submissao");
+  const { data: projetos } = await supabase
+    .from("projetos")
+    .select("id, nome_projeto, municipio, fase, status, timestamp_submissao")
+    .eq("programa_id", pid);
   const projetoIds = (projetos ?? []).map((p) => p.id).filter(Boolean);
 
   const atribByProjeto = new Map<string, { total: number; concluidas: number }>();
@@ -96,8 +113,11 @@ export default async function AdminDashboardPage() {
   pendenciasProjetos.sort((a, b) => a.nome_projeto.localeCompare(b.nome_projeto, "pt-BR"));
   const maxPend = Math.max(1, ...Array.from(pendPorAval.values()));
 
+  const showFinalizar = !isProgramaFinalizado(programa) && prazoAvaliacaoEncerrado(programa);
+
   return (
     <div className="space-y-6">
+      <ProgramaFinalizarBanner prazoEncerrado={showFinalizar} />
       <div className="rounded-xl border border-border/70 bg-gradient-to-r from-card/90 via-card/80 to-primary/5 p-5 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>

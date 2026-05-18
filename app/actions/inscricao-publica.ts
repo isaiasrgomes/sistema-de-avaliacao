@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getProgramaAbertoInscricao } from "@/lib/programa/context";
 import { cadastrarOuAtualizarProjetoManual } from "@/lib/services/projeto-manual";
 import { projetoManualSchema } from "@/lib/validations/projeto-manual";
 import { revalidatePath } from "next/cache";
@@ -13,11 +14,15 @@ export async function actionInscricaoPublica(data: unknown) {
   }
 
   const supabase = createAdminClient();
+  const programa = await getProgramaAbertoInscricao(supabase);
+  if (!programa) {
+    throw new Error("Não há programa aberto para inscrições no momento. Entre em contato com a coordenação.");
+  }
   const payload = {
     ...parsed.data,
     timestamp_submissao: new Date().toISOString(),
   };
-  const res = await cadastrarOuAtualizarProjetoManual(supabase, payload);
+  const res = await cadastrarOuAtualizarProjetoManual(supabase, payload, programa.id);
   if (!res.ok) throw new Error(res.erro);
 
   revalidatePath("/inscricao");

@@ -1,4 +1,5 @@
 import { createServerSupabase } from "@/lib/supabase/server";
+import { getProgramaMonitorForPage } from "@/lib/programa/page-helper";
 import { ProjetosClient } from "./projetos-client";
 
 function normalizeId(value: unknown): string {
@@ -7,7 +8,12 @@ function normalizeId(value: unknown): string {
 
 export default async function AdminProjetosPage() {
   const supabase = await createServerSupabase();
-  const { data: projetos } = await supabase.from("projetos").select("*").order("nome_projeto", { ascending: true });
+  const programa = await getProgramaMonitorForPage(supabase);
+  const { data: projetos } = await supabase
+    .from("projetos")
+    .select("*")
+    .eq("programa_id", programa.id)
+    .order("nome_projeto", { ascending: true });
   const { data: avaliadores } = await supabase.from("avaliadores").select("id, nome, email").eq("ativo", true).order("nome");
 
   const projetoIds = (projetos ?? []).map((p) => p.id).filter(Boolean);

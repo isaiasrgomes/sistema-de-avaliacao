@@ -13,7 +13,8 @@ export type CadastroProjetoResult =
 
 export async function cadastrarOuAtualizarProjetoManual(
   supabase: SupabaseClient,
-  input: ProjetoManualInput
+  input: ProjetoManualInput,
+  programaId: string
 ): Promise<CadastroProjetoResult> {
   let ts: string;
   try {
@@ -62,11 +63,13 @@ export async function cadastrarOuAtualizarProjetoManual(
     url_video_pitch: input.url_video_pitch ? norm(input.url_video_pitch) : null,
     timestamp_submissao: ts,
     status: "INSCRITO" as ProjetoStatus,
+    programa_id: programaId,
   };
 
   const { data: existing } = await supabase
     .from("projetos")
     .select("id")
+    .eq("programa_id", programaId)
     .eq("cpf_responsavel", payload.cpf_responsavel)
     .eq("nome_projeto", payload.nome_projeto)
     .maybeSingle();

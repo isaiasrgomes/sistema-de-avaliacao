@@ -9,7 +9,13 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
-export function RankingClient({ totalVagasInicial }: { totalVagasInicial: number }) {
+export function RankingClient({
+  totalVagasInicial,
+  readonly = false,
+}: {
+  totalVagasInicial: number;
+  readonly?: boolean;
+}) {
   const [vagas, setVagas] = useState(String(totalVagasInicial));
   const [loadingKey, setLoadingKey] = useState<"vagas" | "ranking" | "cota" | null>(null);
 
@@ -21,7 +27,7 @@ export function RankingClient({ totalVagasInicial }: { totalVagasInicial: number
       </div>
       <Button
         variant="secondary"
-        disabled={loadingKey !== null}
+        disabled={loadingKey !== null || readonly}
         onClick={async () => {
           try {
             setLoadingKey("vagas");
@@ -36,7 +42,7 @@ export function RankingClient({ totalVagasInicial }: { totalVagasInicial: number
         {loadingKey === "vagas" ? "Processando..." : "Salvar vagas"}
       </Button>
       <Button
-        disabled={loadingKey !== null}
+        disabled={loadingKey !== null || readonly}
         onClick={async () => {
           try {
             setLoadingKey("ranking");
@@ -55,7 +61,7 @@ export function RankingClient({ totalVagasInicial }: { totalVagasInicial: number
       </Button>
       <Button
         variant="outline"
-        disabled={loadingKey !== null}
+        disabled={loadingKey !== null || readonly}
         onClick={async () => {
           try {
             setLoadingKey("cota");
