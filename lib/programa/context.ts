@@ -55,14 +55,24 @@ export function prazoAvaliacaoEncerrado(programa: Programa, agora = new Date()) 
   return fim != null && agora > fim;
 }
 
+/** Programa ativo para inscrição (no máximo um EM_PROCESSO). */
 export async function getProgramaAbertoInscricao(supabase: SupabaseClient): Promise<Programa | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("programas")
     .select("*")
     .eq("status", "EM_PROCESSO")
     .is("deleted_at", null)
     .order("criado_em", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return (data as Programa | null) ?? null;
+    .limit(2);
+
+  if (error) throw new Error(error.message);
+
+  const rows = (data as Programa[]) ?? [];
+  if (rows.length === 0) return null;
+  if (rows.length > 1) {
+    throw new Error(
+      "Existem vários programas em andamento. A coordenação deve manter apenas um programa ativo por vez."
+    );
+  }
+  return rows[0];
 }

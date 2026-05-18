@@ -7,7 +7,13 @@ import { actionImportarCSV } from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function ImportarCsvCard() {
+export function ImportarCsvCard({
+  programaAtivoNome,
+  importacaoDisponivel,
+}: {
+  programaAtivoNome?: string | null;
+  importacaoDisponivel: boolean;
+}) {
   const [csv, setCsv] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -38,14 +44,27 @@ export function ImportarCsvCard() {
       <CardHeader>
         <CardTitle>Importar CSV (Google Forms)</CardTitle>
         <CardDescription>
-          Colunas são mapeadas automaticamente. Além dos dados cadastrais do projeto, o CSV precisa conter também os campos das
-          seções de equipe, mercado e tecnologia, incluindo setor de aplicação (lista dropdown).
+          {importacaoDisponivel && programaAtivoNome ? (
+            <>
+              Projetos importados serão vinculados ao programa em andamento:{" "}
+              <span className="font-medium text-foreground">{programaAtivoNome}</span>.
+            </>
+          ) : (
+            <>Não há programa em andamento. Crie uma edição ativa em Programas para habilitar a importação.</>
+          )}{" "}
+          Colunas são mapeadas automaticamente (equipe, mercado, tecnologia e setor de aplicação).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <input type="file" accept=".csv,text/csv" onChange={onFile} />
-        <Textarea value={csv} onChange={(e) => setCsv(e.target.value)} rows={16} placeholder="Cole CSV aqui..." />
-        <Button disabled={loading || !csv.trim()} onClick={enviar}>
+        <input type="file" accept=".csv,text/csv" onChange={onFile} disabled={!importacaoDisponivel} />
+        <Textarea
+          value={csv}
+          onChange={(e) => setCsv(e.target.value)}
+          rows={16}
+          placeholder="Cole CSV aqui..."
+          disabled={!importacaoDisponivel}
+        />
+        <Button disabled={loading || !csv.trim() || !importacaoDisponivel} onClick={enviar}>
           {loading ? "Importando…" : "Importar"}
         </Button>
       </CardContent>

@@ -157,7 +157,8 @@ function parseTimestamp(value: string) {
 
 export async function importarCSVProjetos(
   supabase: SupabaseClient,
-  csvText: string
+  csvText: string,
+  programaId: string
 ): Promise<ImportResult> {
   const ufsSet = new Set(UFS_BRASIL);
   const erros: string[] = [];
@@ -297,11 +298,13 @@ export async function importarCSVProjetos(
       url_video_pitch: urlVideoPitch ? limitarCampo(urlVideoPitch, 2000) : null,
       timestamp_submissao: parsedTimestamp,
       status: "INSCRITO" as ProjetoStatus,
+      programa_id: programaId,
     };
 
     const { data: existing } = await supabase
       .from("projetos")
       .select("id")
+      .eq("programa_id", programaId)
       .eq("cpf_responsavel", cpfResponsavel)
       .eq("nome_projeto", nomeProjeto)
       .maybeSingle();

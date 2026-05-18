@@ -10,46 +10,13 @@ import { DashboardMetricasClient } from "./dashboard-metricas-client";
 import { AlertTriangle, BarChart3, CheckCircle2, Clock3, ClipboardList, FileText, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { projetoEmAvaliacaoAtiva, projetoTeveAvaliacaoEntregue } from "@/lib/utils/projeto-metricas";
 
 export default async function AdminDashboardPage() {
   const supabase = await createServerSupabase();
   const programa = await getProgramaMonitorForPage(supabase);
   const pid = programa.id;
 
-  const { count: total } = await supabase
-    .from("projetos")
-    .select("*", { count: "exact", head: true })
-    .eq("programa_id", pid);
-  const { count: desc } = await supabase
-    .from("projetos")
-    .select("*", { count: "exact", head: true })
-    .eq("programa_id", pid)
-    .eq("status", "DESCLASSIFICADO");
-  const { count: aval } = await supabase
-    .from("projetos")
-    .select("*", { count: "exact", head: true })
-    .eq("programa_id", pid)
-    .eq("status", "AVALIADO");
-  const { count: em } = await supabase
-    .from("projetos")
-    .select("*", { count: "exact", head: true })
-    .eq("programa_id", pid)
-    .eq("status", "EM_AVALIACAO");
-
-  const { data: pends } = await supabase
-    .from("atribuicoes")
-    .select("avaliador_id")
-    .in("status", ["PENDENTE", "EM_ANDAMENTO"]);
-  const { data: avaliadores } = await supabase.from("avaliadores").select("id, nome");
-
-  const pendPorAval = new Map<string, number>();
-  for (const p of pends ?? []) {
-    pendPorAval.set(p.avaliador_id, (pendPorAval.get(p.avaliador_id) ?? 0) + 1);
-  }
-  const nomePorAvaliador = new Map((avaliadores ?? []).map((a) => [a.id, a.nome]));
-
-  const eleg = Math.max(0, (total ?? 0) - (desc ?? 0));
-  const pct = eleg > 0 ? Math.round(((aval ?? 0) / eleg) * 100) : 0;
   const { data: projetos } = await supabase
     .from("projetos")
     .select("id, nome_projeto, municipio, fase, status, timestamp_submissao")
@@ -57,26 +24,39 @@ export default async function AdminDashboardPage() {
   const projetoIds = (projetos ?? []).map((p) => p.id).filter(Boolean);
 
   const atribByProjeto = new Map<string, { total: number; concluidas: number }>();
+  const atribuicaoParaProjeto = new Map<string, string>();
+  const firstAvaliacaoByProjeto = new Map<string, Date>();
+
   if (projetoIds.length > 0) {
-    const { data: atribsAll } = await supabase.from("atribuicoes").select("projeto_id, status").in("projeto_id", projetoIds);
+    const { data: atribsAll } = await supabase
+      .from("atribuicoes")
+      .select("id, projeto_id, status")
+      .in("projeto_id", projetoIds);
+
+    const atribuicaoIds: string[] = [];
     for (const row of atribsAll ?? []) {
-      const pid = row.projeto_id as string;
-      const cur = atribByProjeto.get(pid) ?? { total: 0, concluidas: 0 };
+      const projId = row.projeto_id as string;
+      atribuicaoIds.push(row.id);
+      atribuicaoParaProjeto.set(row.id, projId);
+      const cur = atribByProjeto.get(projId) ?? { total: 0, concluidas: 0 };
       cur.total += 1;
       if (row.status === "CONCLUIDA") cur.concluidas += 1;
-      atribByProjeto.set(pid, cur);
+      atribByProjeto.set(projId, cur);
     }
-  }
 
-  const { data: avaliacoes } = await supabase.from("avaliacoes").select("data_avaliacao, atribuicoes(projeto_id)");
-
-  const firstAvaliacaoByProjeto = new Map<string, Date>();
-  for (const a of avaliacoes ?? []) {
-    const projetoId = (a.atribuicoes as { projeto_id?: string } | null)?.projeto_id;
-    if (!projetoId) continue;
-    const current = firstAvaliacaoByProjeto.get(projetoId);
-    const d = new Date(a.data_avaliacao);
-    if (!current || d < current) firstAvaliacaoByProjeto.set(projetoId, d);
+    if (atribuicaoIds.length > 0) {
+      const { data: avs } = await supabase
+        .from("avaliacoes")
+        .select("data_avaliacao, atribuicao_id")
+        .in("atribuicao_id", atribuicaoIds);
+      for (const a of avs ?? []) {
+        const projetoId = atribuicaoParaProjeto.get(a.atribuicao_id);
+        if (!projetoId) continue;
+        const current = firstAvaliacaoByProjeto.get(projetoId);
+        const d = new Date(a.data_avaliacao);
+        if (!current || d < current) firstAvaliacaoByProjeto.set(projetoId, d);
+      }
+    }
   }
 
   const projetosComMetrica = (projetos ?? []).map((p) => {
@@ -94,7 +74,30 @@ export default async function AdminDashboardPage() {
     };
   });
 
+  const total = projetosComMetrica.length;
+  const desc = projetosComMetrica.filter((p) => p.status === "DESCLASSIFICADO").length;
+  const elegiveis = projetosComMetrica.filter((p) => p.status !== "DESCLASSIFICADO");
+  const aval = elegiveis.filter((p) => projetoTeveAvaliacaoEntregue(p)).length;
+  const em = elegiveis.filter((p) => projetoEmAvaliacaoAtiva(p.status)).length;
+  const pct = elegiveis.length > 0 ? Math.round((aval / elegiveis.length) * 100) : 0;
+
+  const pendPorAval = new Map<string, number>();
+  if (projetoIds.length > 0) {
+    const { data: pends } = await supabase
+      .from("atribuicoes")
+      .select("avaliador_id")
+      .in("projeto_id", projetoIds)
+      .in("status", ["PENDENTE", "EM_ANDAMENTO"]);
+    for (const p of pends ?? []) {
+      pendPorAval.set(p.avaliador_id, (pendPorAval.get(p.avaliador_id) ?? 0) + 1);
+    }
+  }
+  const { data: avaliadores } = await supabase.from("avaliadores").select("id, nome");
+  const nomePorAvaliador = new Map((avaliadores ?? []).map((a) => [a.id, a.nome]));
+
   const pendenciasProjetos: { id: string; nome_projeto: string; tipo: PendenciaTipo }[] = [];
+  const programaFinalizado = isProgramaFinalizado(programa);
+  if (!programaFinalizado) {
   for (const p of projetos ?? []) {
     if (p.status === "DESCLASSIFICADO") continue;
     const st = atribByProjeto.get(p.id) ?? { total: 0, concluidas: 0 };
@@ -110,14 +113,21 @@ export default async function AdminDashboardPage() {
       pendenciasProjetos.push({ id: p.id, nome_projeto: p.nome_projeto, tipo: "AVALIACAO_INCOMPLETA" });
     }
   }
+  }
   pendenciasProjetos.sort((a, b) => a.nome_projeto.localeCompare(b.nome_projeto, "pt-BR"));
   const maxPend = Math.max(1, ...Array.from(pendPorAval.values()));
 
-  const showFinalizar = !isProgramaFinalizado(programa) && prazoAvaliacaoEncerrado(programa);
+  const showFinalizar = !programaFinalizado && prazoAvaliacaoEncerrado(programa);
 
   return (
     <div className="space-y-6">
       <ProgramaFinalizarBanner prazoEncerrado={showFinalizar} />
+      {programaFinalizado ? (
+        <p className="rounded-lg border border-border/70 bg-muted/40 px-4 py-2 text-sm text-muted-foreground">
+          Programa <span className="font-medium text-foreground">{programa.nome}</span> finalizado — painel em modo
+          consulta. Métricas refletem o resultado encerrado desta edição.
+        </p>
+      ) : null}
       <div className="rounded-xl border border-border/70 bg-gradient-to-r from-card/90 via-card/80 to-primary/5 p-5 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -140,7 +150,7 @@ export default async function AdminDashboardPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Inscritos</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
-            <p className="text-2xl font-bold">{total ?? 0}</p>
+            <p className="text-2xl font-bold">{total}</p>
             <FileText className="h-5 w-5 text-muted-foreground" />
           </CardContent>
         </Card>
@@ -149,7 +159,7 @@ export default async function AdminDashboardPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Desclassificados</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-rose-600">{desc ?? 0}</p>
+            <p className="text-2xl font-bold text-rose-600">{desc}</p>
             <AlertTriangle className="h-5 w-5 text-rose-500" />
           </CardContent>
         </Card>
@@ -158,7 +168,7 @@ export default async function AdminDashboardPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Avaliados</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-emerald-600">{aval ?? 0}</p>
+            <p className="text-2xl font-bold text-emerald-600">{aval}</p>
             <CheckCircle2 className="h-5 w-5 text-emerald-500" />
           </CardContent>
         </Card>
@@ -167,7 +177,7 @@ export default async function AdminDashboardPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Em avaliação</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-amber-600">{em ?? 0}</p>
+            <p className="text-2xl font-bold text-amber-600">{em}</p>
             <Clock3 className="h-5 w-5 text-amber-500" />
           </CardContent>
         </Card>
@@ -182,7 +192,9 @@ export default async function AdminDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="max-h-[min(420px,55vh)] space-y-2 overflow-y-auto pr-1">
-            {pendenciasProjetos.length === 0 ? (
+            {programaFinalizado ? (
+              <p className="text-sm text-muted-foreground">Programa finalizado — sem pendências operacionais.</p>
+            ) : pendenciasProjetos.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum projeto elegível com pendência neste recorte.</p>
             ) : (
               pendenciasProjetos.map((row) => {

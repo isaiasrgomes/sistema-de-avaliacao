@@ -45,6 +45,18 @@ export async function actionCriarPrograma(data: unknown) {
 
   const d = parsed.data;
   const admin = createAdminClient();
+
+  const { count: ativos } = await admin
+    .from("programas")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "EM_PROCESSO")
+    .is("deleted_at", null);
+  if (ativos && ativos > 0) {
+    throw new Error(
+      "Já existe um programa em andamento. Finalize-o antes de abrir uma nova edição — só pode haver um programa ativo por vez."
+    );
+  }
+
   const { data: inserted, error } = await admin
     .from("programas")
     .insert({
@@ -70,6 +82,8 @@ export async function actionCriarPrograma(data: unknown) {
   });
 
   revalidatePath("/admin/programas");
+  revalidatePath("/");
+  revalidatePath("/inscricao");
   return { id: inserted.id as string };
 }
 
@@ -87,5 +101,7 @@ export async function actionFinalizarPrograma() {
   revalidatePath("/admin/programas");
   revalidatePath("/admin/ranking");
   revalidatePath("/historico-programas");
+  revalidatePath("/");
+  revalidatePath("/inscricao");
   return res;
 }

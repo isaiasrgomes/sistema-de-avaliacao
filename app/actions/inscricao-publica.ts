@@ -15,7 +15,7 @@ export async function actionInscricaoPublica(data: unknown) {
 
   const supabase = createAdminClient();
   const programa = await getProgramaAbertoInscricao(supabase);
-  if (!programa) {
+  if (!programa || programa.status !== "EM_PROCESSO") {
     throw new Error("Não há programa aberto para inscrições no momento. Entre em contato com a coordenação.");
   }
   const payload = {
@@ -26,6 +26,7 @@ export async function actionInscricaoPublica(data: unknown) {
   if (!res.ok) throw new Error(res.erro);
 
   revalidatePath("/inscricao");
+  revalidatePath("/");
   revalidatePath("/admin/projetos");
   revalidatePath("/admin");
   return res;

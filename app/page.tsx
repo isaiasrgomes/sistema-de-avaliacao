@@ -1,5 +1,13 @@
-import { PrivatePortalHome } from "@/components/private-portal-home";
+import { PublicHome } from "@/components/public-home";
+import { getEstadoInscricaoPublica } from "@/lib/programa/inscricao-publica";
 
-export default function HomePage() {
-  return <PrivatePortalHome />;
+export default async function HomePage() {
+  const estado = await getEstadoInscricaoPublica();
+
+  return (
+    <PublicHome
+      inscricaoAberta={estado.aberta}
+      programaAtivoNome={estado.aberta ? estado.programa.nome : null}
+    />
+  );
 }

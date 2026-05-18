@@ -16,6 +16,7 @@ import {
 import { revalidatePath } from "next/cache";
 import {
   assertProgramaEditavel,
+  getProgramaAbertoInscricao,
   getProgramaMonitorIdFromCookie,
   loadProgramaById,
 } from "@/lib/programa/context";
@@ -103,12 +104,21 @@ export async function actionImportarCSV(formData: FormData) {
   const { supabase, user } = await requireCoord();
   const text = formData.get("csv") as string;
   if (!text) throw new Error("CSV vazio");
-  const res = await importarCSVProjetos(supabase, text);
+
+  const programa = await getProgramaAbertoInscricao(supabase);
+  if (!programa) {
+    throw new Error(
+      "Não há programa em andamento. Crie ou mantenha uma edição ativa em Programas antes de importar o CSV."
+    );
+  }
+  assertProgramaEditavel(programa);
+
+  const res = await importarCSVProjetos(supabase, text, programa.id);
   await logAuditoria(supabase, {
     usuario_id: user.id,
     acao: "IMPORTAR_CSV",
     entidade: "projetos",
-    detalhes: res as unknown as Record<string, unknown>,
+    detalhes: { ...res, programa_id: programa.id, programa_nome: programa.nome } as unknown as Record<string, unknown>,
   });
   revalidatePath("/admin/projetos");
   revalidatePath("/admin");

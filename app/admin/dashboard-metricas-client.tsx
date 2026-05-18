@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Building2, CalendarRange, Download, Gauge, Timer } from "lucide-react";
+import { projetoTeveAvaliacaoEntregue } from "@/lib/utils/projeto-metricas";
 
 type DashboardProjetoMetric = {
   id: string;
@@ -52,7 +53,7 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
       item.total += 1;
       if (p.fase === "IDEACAO") item.ideacao += 1;
       if (p.fase === "VALIDACAO") item.validacao += 1;
-      if (p.tem_alguma_avaliacao_entregue) item.comAvaliacaoEntregue += 1;
+      if (projetoTeveAvaliacaoEntregue(p)) item.comAvaliacaoEntregue += 1;
       item.somaAvaliadoresConcluiram += p.qtd_atribuicoes_concluidas ?? 0;
       metricsPorMunicipio.set(p.municipio, item);
     }
@@ -67,7 +68,7 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
   }, [filtrados]);
 
   const taxa = useMemo(() => {
-    const comEntrega = filtrados.filter((p) => p.tem_alguma_avaliacao_entregue).length;
+    const comEntrega = filtrados.filter((p) => projetoTeveAvaliacaoEntregue(p)).length;
     return filtrados.length ? Math.round((comEntrega / filtrados.length) * 100) : 0;
   }, [filtrados]);
 
@@ -106,7 +107,7 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
   const maxSerie = useMemo(() => Math.max(1, ...serieTemporal.map((s) => Math.max(s.submetidos, s.avaliados))), [serieTemporal]);
   const totalIdeacao = useMemo(() => filtrados.filter((p) => p.fase === "IDEACAO").length, [filtrados]);
   const totalValidacao = useMemo(() => filtrados.filter((p) => p.fase === "VALIDACAO").length, [filtrados]);
-  const totalAvaliados = useMemo(() => filtrados.filter((p) => p.tem_alguma_avaliacao_entregue).length, [filtrados]);
+  const totalAvaliados = useMemo(() => filtrados.filter((p) => projetoTeveAvaliacaoEntregue(p)).length, [filtrados]);
   const totalNaoAvaliados = Math.max(0, filtrados.length - totalAvaliados);
 
   function exportarCsvRecorte() {
@@ -345,7 +346,7 @@ export function DashboardMetricasClient({ projetos, progressoPct }: { projetos: 
                 <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, progressoPct)}%` }} />
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {progressoPct}% dos elegíveis com ciclo encerrado (aproximação por status “Avaliado”).
+                {progressoPct}% dos elegíveis com ao menos uma avaliação entregue (inclui selecionados, suplentes e não selecionados).
               </p>
             </CardContent>
           </Card>
