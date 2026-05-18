@@ -5,7 +5,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { logAuditoria } from "@/lib/services/audit";
 import Papa from "papaparse";
-import { enviarCredenciaisAvaliadorResend, gerarSenhaAleatoria } from "@/lib/services/email-reminders";
+import {
+  enviarCredenciaisAvaliadorResend,
+  enviarEmailPersonalizadoAvaliadoresResend,
+  gerarSenhaAleatoria,
+} from "@/lib/services/email-reminders";
 import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 async function requireCoord() {
@@ -363,4 +367,48 @@ export async function actionRejeitarCadastroAvaliador(profileId: string) {
   });
 
   revalidatePath("/admin/avaliadores");
+}
+
+export async function actionEnviarEmailAvaliadores(input: {
+  avaliadorIds: string[];
+  assunto: string;
+  mensagem: string;
+}) {
+  const { supabase, user } = await requireCoord();
+  const assunto = input.assunto.trim();
+  const mensagem = input.mensagem.trim();
+  if (!assunto) throw new Error("Informe o assunto do e-mail.");
+  if (!mensagem) throw new Error("Informe a mensagem do e-mail.");
+  const ids = [...new Set(input.avaliadorIds.filter(Boolean))];
+  if (!ids.length) throw new Error("Nenhum avaliador selecionado para envio.");
+
+  const { data: avaliadores, error } = await supabase
+    .from("avaliadores")
+    .select("id, nome, email")
+    .in("id", ids);
+  if (error) throw new Error("Não foi possível carregar os avaliadores selecionados.");
+  if (!avaliadores?.length) throw new Error("Nenhum avaliador encontrado com os IDs informados.");
+
+  const { data: cfg } = await supabase.from("app_config").select("programa_nome").eq("id", 1).maybeSingle();
+  const resultado = await enviarEmailPersonalizadoAvaliadoresResend(avaliadores, {
+    assunto,
+    mensagem,
+    programaNome: cfg?.programa_nome,
+  });
+
+  await logAuditoria(supabase, {
+    usuario_id: user.id,
+    acao: "ENVIAR_EMAIL_AVALIADORES",
+    entidade: "avaliadores",
+    detalhes: {
+      assunto,
+      total: resultado.total,
+      enviados: resultado.enviados,
+      erros: resultado.erros,
+      avaliadorIds: avaliadores.map((a) => a.id),
+    },
+  });
+
+  revalidatePath("/admin/avaliadores");
+  return resultado;
 }

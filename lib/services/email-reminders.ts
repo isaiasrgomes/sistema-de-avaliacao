@@ -16,6 +16,8 @@ export type RecuperacaoSenhaEmail = {
   linkRedefinicao: string;
 };
 
+export type EmailPersonalizadoDestinatario = { email: string; nome: string };
+
 function getSiteUrl() {
   const direct =
     process.env.SITE_URL?.trim() ||
@@ -302,4 +304,41 @@ function escapeHtml(s: string) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function formatMensagemPersonalizadaHtml(mensagem: string) {
+  return escapeHtml(mensagem).replace(/\r\n|\r|\n/g, "<br />");
+}
+
+/**
+ * Envia e-mail personalizado para avaliadores usando o template padrão do sistema.
+ * O admin define assunto e corpo; layout (header, logo, rodapé) permanece fixo.
+ */
+export async function enviarEmailPersonalizadoAvaliadoresResend(
+  destinatarios: EmailPersonalizadoDestinatario[],
+  opts: { assunto: string; mensagem: string; programaNome?: string | null }
+): Promise<{ enviados: number; total: number; erros: string[] }> {
+  const assunto = opts.assunto.trim();
+  const mensagem = opts.mensagem.trim();
+  const erros: string[] = [];
+  let enviados = 0;
+
+  for (const d of destinatarios) {
+    const html = renderEmailPadrao({
+      titulo: assunto,
+      subtitulo: opts.programaNome ?? undefined,
+      conteudoHtml: `
+        <p>Olá, <strong>${escapeHtml(d.nome)}</strong>.</p>
+        <div style="margin-top:14px;line-height:1.6">${formatMensagemPersonalizadaHtml(mensagem)}</div>
+      `,
+    });
+    const sent = await enviarViaResend({ to: [d.email], subject: assunto, html });
+    if (!sent.ok) {
+      erros.push(`${d.email}: ${sent.erro}`);
+    } else {
+      enviados += 1;
+    }
+  }
+
+  return { enviados, total: destinatarios.length, erros };
 }

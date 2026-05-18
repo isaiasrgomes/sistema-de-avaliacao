@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Avaliador } from "@/lib/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import {
   actionAprovarCadastroAvaliador,
   actionCreateAvaliador,
   actionDeleteAvaliador,
+  actionEnviarEmailAvaliadores,
   actionImportarAvaliadoresCSV,
   actionRejeitarCadastroAvaliador,
   actionToggleAvaliador,
@@ -18,12 +19,16 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { getUserFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
+import { Loader2, Mail } from "lucide-react";
 
 type Row = Avaliador & { carga: number; avaliacoes_finalizadas: number };
 
 type Pendente = { id: string; nome: string; email: string | null; criado_em: string };
 type Integrations = { supabaseAdmin: boolean; resend: boolean };
+type FiltroStatus = "todos" | "ativo" | "inativo";
+type ModoDestinatarios = "todos" | "selecionados" | "filtro";
 
 export function AvaliadoresClient({
   initial,
@@ -44,6 +49,57 @@ export function AvaliadoresClient({
   const [editEmail, setEditEmail] = useState("");
   const [editInst, setEditInst] = useState("");
   const [aExcluir, setAExcluir] = useState<Row | null>(null);
+  const [filtroTabela, setFiltroTabela] = useState<FiltroStatus>("todos");
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [modalEmail, setModalEmail] = useState(false);
+  const [modalConfirmar, setModalConfirmar] = useState(false);
+  const [modoDestinatarios, setModoDestinatarios] = useState<ModoDestinatarios>("selecionados");
+  const [filtroDestinatario, setFiltroDestinatario] = useState<"ativo" | "inativo">("ativo");
+  const [assuntoEmail, setAssuntoEmail] = useState("");
+  const [mensagemEmail, setMensagemEmail] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  const avaliadoresFiltrados = useMemo(() => {
+    if (filtroTabela === "ativo") return initial.filter((a) => a.ativo);
+    if (filtroTabela === "inativo") return initial.filter((a) => !a.ativo);
+    return initial;
+  }, [initial, filtroTabela]);
+
+  const idsDestinatarios = useMemo(() => {
+    if (modoDestinatarios === "todos") return initial.map((a) => a.id);
+    if (modoDestinatarios === "selecionados") return [...selecionados];
+    return initial.filter((a) => (filtroDestinatario === "ativo" ? a.ativo : !a.ativo)).map((a) => a.id);
+  }, [modoDestinatarios, selecionados, filtroDestinatario, initial]);
+
+  const todosVisiveisSelecionados =
+    avaliadoresFiltrados.length > 0 && avaliadoresFiltrados.every((a) => selecionados.has(a.id));
+  const algunsVisiveisSelecionados =
+    avaliadoresFiltrados.some((a) => selecionados.has(a.id)) && !todosVisiveisSelecionados;
+
+  function toggleSelecionarTodos(checked: boolean) {
+    setSelecionados((prev) => {
+      const next = new Set(prev);
+      for (const a of avaliadoresFiltrados) {
+        if (checked) next.add(a.id);
+        else next.delete(a.id);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelecionado(id: string, checked: boolean) {
+    setSelecionados((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function abrirModalEmail() {
+    setModoDestinatarios(selecionados.size > 0 ? "selecionados" : "todos");
+    setModalEmail(true);
+  }
 
   function baixarModeloCsv() {
     const modelo =
@@ -253,9 +309,42 @@ export function AvaliadoresClient({
         </div>
       </div>
       <div className="overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={filtroTabela}
+              onChange={(e) => setFiltroTabela(e.target.value as FiltroStatus)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="todos">Todos na lista</option>
+              <option value="ativo">Somente ativos</option>
+              <option value="inativo">Somente inativos</option>
+            </select>
+            <p className="text-sm text-muted-foreground">
+              ✅ {selecionados.size} avaliador{selecionados.size === 1 ? "" : "es"} selecionado
+              {selecionados.size === 1 ? "" : "s"}
+            </p>
+          </div>
+          <Button onClick={abrirModalEmail} disabled={!integrations.resend || initial.length === 0}>
+            <Mail className="mr-2 h-4 w-4" />
+            Enviar e-mail
+          </Button>
+        </div>
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-10">
+              <input
+                type="checkbox"
+                aria-label="Selecionar todos"
+                checked={todosVisiveisSelecionados}
+                ref={(el) => {
+                  if (el) el.indeterminate = algunsVisiveisSelecionados;
+                }}
+                onChange={(e) => toggleSelecionarTodos(e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+            </TableHead>
             <TableHead>Nome</TableHead>
             <TableHead>E-mail</TableHead>
             <TableHead>Carga</TableHead>
@@ -265,8 +354,17 @@ export function AvaliadoresClient({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {initial.map((a) => (
+          {avaliadoresFiltrados.map((a) => (
             <TableRow key={a.id}>
+              <TableCell>
+                <input
+                  type="checkbox"
+                  aria-label={`Selecionar ${a.nome}`}
+                  checked={selecionados.has(a.id)}
+                  onChange={(e) => toggleSelecionado(a.id, e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+              </TableCell>
               <TableCell>{a.nome}</TableCell>
               <TableCell>{a.email}</TableCell>
               <TableCell>{a.carga}</TableCell>
@@ -305,6 +403,183 @@ export function AvaliadoresClient({
         </TableBody>
       </Table>
       </div>
+
+      <Dialog
+        open={modalEmail}
+        onOpenChange={(open) => {
+          if (!open && !enviando) setModalEmail(false);
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Enviar e-mail para avaliadores</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground">Destinatários</p>
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="modo-destinatarios"
+                  checked={modoDestinatarios === "todos"}
+                  onChange={() => setModoDestinatarios("todos")}
+                  className="mt-1"
+                />
+                <span>
+                  Todos os avaliadores <span className="text-muted-foreground">({initial.length})</span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="modo-destinatarios"
+                  checked={modoDestinatarios === "selecionados"}
+                  onChange={() => setModoDestinatarios("selecionados")}
+                  disabled={selecionados.size === 0}
+                  className="mt-1"
+                />
+                <span>
+                  Avaliadores selecionados manualmente{" "}
+                  <span className="text-muted-foreground">({selecionados.size})</span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="modo-destinatarios"
+                  checked={modoDestinatarios === "filtro"}
+                  onChange={() => setModoDestinatarios("filtro")}
+                  className="mt-1"
+                />
+                <span className="flex flex-wrap items-center gap-2">
+                  Grupo por status:
+                  <select
+                    value={filtroDestinatario}
+                    onChange={(e) => setFiltroDestinatario(e.target.value as "ativo" | "inativo")}
+                    disabled={modoDestinatarios !== "filtro"}
+                    className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                    onClick={() => setModoDestinatarios("filtro")}
+                  >
+                    <option value="ativo">Ativos</option>
+                    <option value="inativo">Inativos</option>
+                  </select>
+                  <span className="text-muted-foreground">
+                    (
+                    {initial.filter((a) => (filtroDestinatario === "ativo" ? a.ativo : !a.ativo)).length})
+                  </span>
+                </span>
+              </label>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="email-assunto">Assunto *</Label>
+              <Input
+                id="email-assunto"
+                value={assuntoEmail}
+                onChange={(e) => setAssuntoEmail(e.target.value)}
+                placeholder="Assunto do e-mail"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="email-mensagem">Mensagem personalizada *</Label>
+              <Textarea
+                id="email-mensagem"
+                value={mensagemEmail}
+                onChange={(e) => setMensagemEmail(e.target.value)}
+                placeholder="Digite a mensagem. Quebras de linha serão preservadas."
+                className="min-h-32"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                O e-mail usará o layout padrão do sistema (logo, cabeçalho e rodapé). Apenas o texto acima será
+                inserido no corpo.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setModalEmail(false)} disabled={enviando}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!assuntoEmail.trim() || !mensagemEmail.trim() || idsDestinatarios.length === 0}
+              onClick={() => {
+                if (!assuntoEmail.trim() || !mensagemEmail.trim()) {
+                  toast.error("Preencha assunto e mensagem.");
+                  return;
+                }
+                if (idsDestinatarios.length === 0) {
+                  toast.error("Selecione ao menos um destinatário.");
+                  return;
+                }
+                setModalConfirmar(true);
+              }}
+            >
+              Revisar envio
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={modalConfirmar}
+        onOpenChange={(open) => {
+          if (!open && !enviando) setModalConfirmar(false);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar envio</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que deseja enviar este e-mail para{" "}
+            <strong>{idsDestinatarios.length}</strong> avaliador{idsDestinatarios.length === 1 ? "" : "es"}?
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setModalConfirmar(false)} disabled={enviando}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={enviando}
+              onClick={async () => {
+                setEnviando(true);
+                try {
+                  const resultado = await actionEnviarEmailAvaliadores({
+                    avaliadorIds: idsDestinatarios,
+                    assunto: assuntoEmail,
+                    mensagem: mensagemEmail,
+                  });
+                  if (resultado.erros.length) {
+                    toast.warning(
+                      `Enviados ${resultado.enviados} de ${resultado.total}. ${resultado.erros.length} falha(s). Verifique o console para detalhes.`
+                    );
+                    console.warn(resultado.erros);
+                  } else {
+                    toast.success(`E-mail enviado para ${resultado.enviados} avaliador(es).`);
+                  }
+                  setModalConfirmar(false);
+                  setModalEmail(false);
+                  setAssuntoEmail("");
+                  setMensagemEmail("");
+                  setSelecionados(new Set());
+                } catch (e: unknown) {
+                  toast.error(getUserFriendlyErrorMessage(e, "Não foi possível enviar os e-mails."));
+                } finally {
+                  setEnviando(false);
+                }
+              }}
+            >
+              {enviando ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando…
+                </>
+              ) : (
+                "Confirmar envio"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={!!editando}
